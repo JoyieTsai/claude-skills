@@ -1,0 +1,12 @@
+# Per-skill dependencies — installed locally by each skill's install script,
+# since native binaries aren't portable across OS/arch.
+node_modules/
+
+# Skill output artefacts, not source.
+.uiux-audit/
+
+.DS_Store
+
+# Lockfiles ARE committed: they pin dependency versions so every machine
+# installs the same thing (e.g. the playwright version whose browser build
+# uiux-audit/install.sh downloads).

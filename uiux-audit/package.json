@@ -1,0 +1,10 @@
+{
+  "name": "uiux-audit-skill",
+  "private": true,
+  "type": "module",
+  "description": "Local deps for the uiux-audit skill's capture script.",
+  "dependencies": {
+    "axe-core": "^4.10.2",
+    "playwright": "^1.62.1"
+  }
+}

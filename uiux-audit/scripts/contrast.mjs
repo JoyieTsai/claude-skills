@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+// WCAG 2.1 contrast ratio calculator.
+// Use this instead of estimating — eyeballed contrast claims are frequently wrong.
+//
+//   node contrast.mjs "#767676" "#ffffff"
+//   node contrast.mjs "rgb(118,118,118)" white
+//   node contrast.mjs "#888" "#fff" --size 24 --bold      # large-text thresholds
+//   node contrast.mjs --pairs "#333 #fff, #999 #fff, #06c #fff"
+
+const NAMED = {
+  white: '#ffffff', black: '#000000', red: '#ff0000', green: '#008000',
+  blue: '#0000ff', gray: '#808080', grey: '#808080', silver: '#c0c0c0',
+  transparent: null,
+};
+
+function parseColor(input) {
+  const s = String(input).trim().toLowerCase();
+
+  if (s in NAMED) {
+    if (NAMED[s] === null) throw new Error('cannot compute contrast against "transparent" — sample the composited colour instead');
+    return parseColor(NAMED[s]);
+  }
+
+  let m = s.match(/^#([0-9a-f]{3,8})$/);
+  if (m) {
+    let h = m[1];
+    if (h.length === 3 || h.length === 4) h = [...h].map(c => c + c).join('');
+    if (h.length !== 6 && h.length !== 8) throw new Error(`bad hex: ${input}`);
+    const rgb = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+    const a = h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1;
+    return { rgb, a };
+  }
+
+  m = s.match(/^rgba?\(([^)]+)\)$/);
+  if (m) {
+    const parts = m[1].split(/[,\s/]+/).filter(Boolean);
+    const rgb = parts.slice(0, 3).map(p =>
+      p.endsWith('%') ? Math.round(parseFloat(p) * 2.55) : parseFloat(p));
+    const a = parts[3] === undefined ? 1
+      : (parts[3].endsWith('%') ? parseFloat(parts[3]) / 100 : parseFloat(parts[3]));
+    return { rgb, a };
+  }
+
+  throw new Error(`unrecognised colour: ${input} (use hex, rgb(), or a basic name)`);
+}
+
+// sRGB relative luminance, WCAG 2.1 §relative-luminance
+function luminance([r, g, b]) {
+  const lin = [r, g, b].map(v => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+function composite(fg, bg) {
+  if (fg.a >= 1) return fg.rgb;
+  return fg.rgb.map((c, i) => Math.round(c * fg.a + bg.rgb[i] * (1 - fg.a)));
+}
+
+function ratio(fgIn, bgIn) {
+  const fg = parseColor(fgIn), bg = parseColor(bgIn);
+  if (bg.a < 1) {
+    console.warn(`  note: background has alpha ${bg.a} — composited over white; sample the real backdrop for accuracy`);
+    bg.rgb = composite(bg, { rgb: [255, 255, 255], a: 1 });
+    bg.a = 1;
+  }
+  const fgRgb = composite(fg, bg);
+  const [l1, l2] = [luminance(fgRgb), luminance(bg.rgb)].sort((a, b) => b - a);
+  return { value: (l1 + 0.05) / (l2 + 0.05), composited: fg.a < 1 ? fgRgb : null };
+}
+
+function grade(r, { size = 16, bold = false } = {}) {
+  const isLarge = size >= 24 || (bold && size >= 18.66);
+  const need = { aa: isLarge ? 3 : 4.5, aaa: isLarge ? 4.5 : 7 };
+  return {
+    isLarge,
+    text: r >= need.aaa ? 'AAA' : r >= need.aa ? 'AA' : 'FAIL',
+    ui: r >= 3 ? 'PASS' : 'FAIL',      // WCAG 1.4.11 non-text contrast
+    need,
+  };
+}
+
+function report(fg, bg, opts) {
+  const { value, composited } = ratio(fg, bg);
+  const g = grade(value, opts);
+  const r = value.toFixed(2);
+  const mark = g.text === 'FAIL' ? '✗' : '✓';
+
+  console.log(`\n${mark} ${fg} on ${bg} → ${r}:1`);
+  if (composited) console.log(`    foreground composited to rgb(${composited.join(', ')})`);
+  console.log(`    text (${opts.size}px${opts.bold ? ' bold' : ''}, ${g.isLarge ? 'large' : 'normal'}): ` +
+              `${g.text}   AA needs ${g.need.aa}:1, AAA needs ${g.need.aaa}:1`);
+  console.log(`    UI / borders / focus rings (needs 3:1): ${g.ui}`);
+  if (g.text === 'FAIL') {
+    console.log(`    → shortfall: ${(g.need.aa - value).toFixed(2)} — darken the foreground or lighten the background`);
+  }
+  return g.text !== 'FAIL';
+}
+
+// ---- CLI ----
+const argv = process.argv.slice(2);
+const opts = { size: 16, bold: false };
+const positional = [];
+let pairs = null;
+
+for (let i = 0; i < argv.length; i++) {
+  const a = argv[i];
+  if (a === '--bold') opts.bold = true;
+  else if (a === '--size') opts.size = parseFloat(argv[++i]);
+  else if (a === '--pairs') pairs = argv[++i];
+  else if (a === '-h' || a === '--help') { printHelp(); process.exit(0); }
+  else positional.push(a);
+}
+
+function printHelp() {
+  console.log(`WCAG contrast ratio calculator
+
+  node contrast.mjs <foreground> <background> [--size N] [--bold]
+  node contrast.mjs --pairs "#333 #fff, #999 #fff"
+
+Thresholds: normal text 4.5:1 (AA) / 7:1 (AAA); large text (>=24px, or >=18.66px bold)
+3:1 / 4.5:1; UI components, borders, icons and focus rings 3:1.`);
+}
+
+try {
+  if (pairs) {
+    let allPass = true;
+    for (const p of pairs.split(',')) {
+      const [fg, bg] = p.trim().split(/\s+/);
+      if (!fg || !bg) { console.error(`skipping malformed pair: "${p.trim()}"`); allPass = false; continue; }
+      allPass = report(fg, bg, opts) && allPass;
+    }
+    console.log('');
+    process.exit(allPass ? 0 : 1);
+  }
+
+  if (positional.length < 2) { printHelp(); process.exit(2); }
+  const ok = report(positional[0], positional[1], opts);
+  console.log('');
+  process.exit(ok ? 0 : 1);
+} catch (e) {
+  console.error(`error: ${e.message}`);
+  process.exit(2);
+}
