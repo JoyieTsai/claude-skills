@@ -1,87 +1,57 @@
-# Mode A — Reviewing design files
+# 模式 A — 審查設計檔
 
-Input is an image, PDF, Figma export, or mockup. You are judging **intent**, before
-implementation cost is sunk. This is the cheapest possible moment to catch a problem.
+輸入是圖片、PDF、Figma 匯出或 mockup。你在評估**意圖**，在實作成本投入之前。這是抓住問題最便宜的時刻。
 
-## Read the file properly first
+## 先認真讀檔
 
-Use the Read tool on each image. For PDFs, use the `pages` parameter. If given a folder,
-list it and read every screen — reviewing one frame of a five-frame flow produces
-misleading conclusions about navigation and consistency.
+對每張圖片使用 Read 工具。PDF 用 `pages` 參數。若給的是資料夾，列出並讀每個畫面——只審查五幀流程中的一幀，會對導覽與一致性得出誤導結論。
 
-If the user gives a Figma *link* rather than a file, you cannot see it. Say so and ask
-for an export (PNG at 2x, or PDF). Don't guess from the URL or the layer names.
+若使用者給的是 Figma *連結* 而非檔案，你看不到。說明並要求匯出（2x PNG，或 PDF）。不要從 URL 或圖層名稱猜測。
 
-## Look before you judge
+## 評判前先觀察
 
-Describe what you actually see, to yourself, before evaluating: screen type, the visible
-elements, the apparent primary action. This forces genuine observation rather than
-pattern-matching to a generic "here are 10 UI tips" response — which is the main failure
-mode of design review.
+先對自己描述實際看到的：畫面類型、可見元素、表面上的主要操作。這強迫真正觀察，而非套用通用的「這裡有 10 個 UI 建議」——那是設計審查的主要失敗模式。
 
-## Then apply the rubric, with these adjustments
+## 再套用評分表，並做這些調整
 
-Some dimensions can't be assessed from a static image. Be explicit about which.
+有些維度無法從靜態圖片評估。明確說明哪些。
 
-| Dimension | In a static design |
+| 維度 | 在靜態設計中 |
 |---|---|
-| Hierarchy, spacing, typography, colour, layout, content, consistency | **Fully assessable** — this is where to focus |
-| Interactive states | Only if the designer drew them. If absent, that *is* the finding: "no hover/focus/disabled states specified — implementation will invent them" |
-| Responsiveness | Only if multiple breakpoints provided. If one desktop frame only, flag: "mobile layout unspecified" and note which elements will be hardest to reflow (wide tables, multi-column, fixed-width sidebars) |
-| Feedback, loading, empty, error states | Usually missing from designs. Name the specific missing states for each async surface — this is one of the highest-value findings you can give |
-| Keyboard/screen-reader a11y | Not assessable. Say so. Contrast and target size *are* assessable |
+| 層級、間距、字型、色彩、版面、內容、一致性 | **可完整評估**——應聚焦於此 |
+| 互動狀態 | 僅當設計師有畫出。若缺席，*那就是*發現：「未指定 hover／focus／disabled 狀態——實作時會自行發明」 |
+| 響應式 | 僅當提供多個斷點。若只有一個桌面幀，標記：「未指定行動版面」，並註明哪些元素最難重排（寬表格、多欄、固定寬側欄） |
+| 回饋、載入、空、錯誤狀態 | 設計中通常缺失。為每個非同步介面點名具體缺少的狀態——這是你能給出的最高價值發現之一 |
+| 鍵盤／螢幕閱讀器無障礙 | 無法評估。說出來。對比與目標尺寸*可以*評估 |
 
-## Measuring from an image
+## 從圖片測量
 
-You can estimate, but be honest about precision:
+可以估計，但對精確度要誠實：
 
-- **Contrast:** you can read colours off the image with reasonable accuracy. Compute the
-  ratio with `scripts/contrast.mjs` and report the number. If the sample is over a
-  gradient, photo, or transparency, say the value is approximate.
-- **Spacing:** relative comparisons are reliable ("the gap above this label is visibly
-  larger than below it"); absolute pixel values are not, unless the export scale is known.
-  Prefer stating the *relationship* that's wrong.
-- **Touch targets:** estimate from the ratio to known elements (body text height, a
-  standard 44px row). Flag anything that looks under ~40px on a mobile frame.
+- **對比：** 可從圖片讀出顏色，準確度合理。用 `scripts/contrast.mjs` 計算比值並回報數字。若取樣在漸層、照片或透明上，說明數值是近似。
+- **間距：** 相對比較可靠（「此標籤上方間隙明顯大於下方」）；絕對像素值不可靠，除非知道匯出比例。優先陳述錯誤的*關係*。
+- **觸控目標：** 從與已知元素的比例估計（內文高度、標準 44px 列）。標記在行動幀上看起來低於約 40px 的任何東西。
 
-Never state a fabricated precise number. "Roughly 12px, under the 44px minimum" is
-honest; "exactly 11.5px" from a screenshot is not.
+絕不寫捏造的精確數字。「大約 12px，低於 44px 最低要求」是誠實的；從截圖寫「正好 11.5px」則不是。
 
-## Design-specific checks not in the main rubric
+## 評分表沒有、但設計特有的檢查
 
-- **Content realism.** Does it use real-length content, or convenient short strings? Ask:
-  what happens with a 60-character product name, an empty list, 400 rows, a user with no
-  avatar, a number in the millions? Designs built on ideal data break on contact with
-  production. This is consistently the most valuable finding in a design review.
-- **Localisation headroom.** German/French run ~30% longer than English; CJK is shorter
-  but taller. Tight-fitting buttons and fixed-width labels will break. Relevant for these
-  projects specifically, which mix Chinese and English.
-- **State coverage per surface.** For each list, form, and async panel, ask whether
-  loading / empty / error / partial / too-many were designed. Enumerate the gaps.
-- **Implementation cost flags.** Call out where the design will be expensive or fragile:
-  custom scrollbars, non-standard form controls, text over uncontrolled imagery,
-  pixel-perfect overlaps, anything requiring a bespoke component where the existing
-  library has one that's close.
-- **Deviation from their own system.** If the project has a design system (Vuetify,
-  Tailwind config, Bootstrap theme), check whether the design's values are reachable
-  with existing tokens, or whether it silently introduces a new grey, a new radius, a
-  new shadow. Each new value is ongoing maintenance cost.
+- **內容真實性。** 用的是真實長度內容，還是方便的短字串？問：60 字產品名、空列表、400 列、沒有頭像的使用者、數百萬的數字會怎樣？建立在理想資料上的設計，一碰到正式環境就壞。這一貫是設計審查最有價值的發現。
+- **在地化餘裕。** 德文／法文比英文約長 30%；CJK 較短但較高。緊貼的按鈕與固定寬標籤會壞。對這些混用中英文的專案特別相關。
+- **每個介面的狀態覆蓋。** 對每個列表、表單與非同步面板，問是否設計了載入／空／錯誤／部分／過多。列舉缺口。
+- **實作成本旗標。** 指出設計會昂貴或脆弱之處：自訂捲軸、非標準表單控制、文字蓋在無法控制的影像上、像素級重疊、現有函式庫已有接近元件卻要求客製。
+- **偏離他們自己的系統。** 若專案有設計系統（Vuetify、Tailwind config、Bootstrap theme），檢查設計的數值是否能用既有 token 達成，還是默默引入新的灰、新的圓角、新的陰影。每個新數值都是持續的維護成本。
 
-## Design-vs-built diff
+## 設計 vs 實作差異
 
-When you have both a design and its implementation, additionally report divergences —
-and characterise each one, because not all divergence is error:
+當你同時有設計與其實作時，另外回報分歧——並定性每一項，因為不是所有分歧都是錯誤：
 
-- **Regression** — built version is worse (wrong spacing, dropped state, weaker contrast)
-- **Improvement** — built version solved something the design missed; consider updating the design
-- **Deliberate** — a documented constraint or platform convention; note and move on
+- **退步** — 實作版本更差（錯誤間距、漏掉狀態、對比更弱）
+- **改進** — 實作解決了設計遺漏的事；考慮更新設計
+- **刻意** — 有文件的限制或平台慣例；記下並繼續
 
-Focus on divergences that change behaviour or accessibility. A 2px padding difference is
-not worth a line in the report unless it breaks alignment with something adjacent.
+聚焦改變行為或無障礙的分歧。2px 的 padding 差異不值得在報告佔一行，除非它破壞了與相鄰元素的對齊。
 
-## Reporting
+## 報告
 
-Same template and severity scale as Mode B. For location, reference the frame and region
-instead of file:line — e.g. `login.png — email field, mid-left` or
-`checkout-flow.pdf p.3 — order summary card`. Be specific enough that the user can find
-it without hunting.
+與模式 B 相同的模板與嚴重度量表。位置引用幀與區域，而非 file:line——例如 `login.png — 電子郵件欄位，中左` 或 `checkout-flow.pdf p.3 — 訂單摘要卡片`。具體到使用者不需尋找就能找到。

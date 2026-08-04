@@ -2,7 +2,7 @@
   "name": "uiux-audit-skill",
   "private": true,
   "type": "module",
-  "description": "Local deps for the uiux-audit skill's capture script.",
+  "description": "uiux-audit skill 截圖腳本的本機依賴。",
   "dependencies": {
     "axe-core": "^4.10.2",
     "playwright": "^1.62.1"

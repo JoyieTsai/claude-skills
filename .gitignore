@@ -1,12 +1,12 @@
-# Per-skill dependencies — installed locally by each skill's install script,
-# since native binaries aren't portable across OS/arch.
+# 各 skill 的依賴 — 由各自的安裝腳本本機安裝，
+# 因為原生二進位無法跨 OS/架構移植。
 node_modules/
 
-# Skill output artefacts, not source.
+# Skill 產出物，非原始碼。
 .uiux-audit/
 
 .DS_Store
 
-# Lockfiles ARE committed: they pin dependency versions so every machine
-# installs the same thing (e.g. the playwright version whose browser build
-# uiux-audit/install.sh downloads).
+# Lockfile 要提交：鎖定依賴版本，讓每台機器
+# 安裝相同內容（例如 uiux-audit/install.sh 下載的
+# playwright 版本所對應的瀏覽器 build）。

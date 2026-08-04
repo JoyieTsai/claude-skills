@@ -1,211 +1,169 @@
-# The 12-dimension rubric
+# 12 維度評分表
 
-Work through all 12. Each has checks with thresholds — prefer a measurable claim
-("14px on a 44px target" ) over an impression ("feels cramped").
-
----
-
-## 1. Visual hierarchy
-
-The eye should land on the primary action first, without being told.
-
-- Exactly **one** primary action per view. Two competing filled buttons = no primary.
-- Size, weight, and colour should agree on what matters. A 32px heading in light grey
-  next to 14px bold black text sends conflicting signals.
-- Headings must nest correctly (h1 → h2 → h3, no skips). This is both hierarchy and a11y.
-- Squint test: blur the screen mentally — do the important blocks still dominate?
-
-**Common failure:** every card has the same visual weight, so the page reads as an
-undifferentiated grid and the user scans it linearly instead of jumping to what matters.
+依序走完全部 12 項。每項都有檢查點與門檻——優先寫可測量的主張（「44px 目標上只有 14px」），而非印象（「感覺很擠」）。
 
 ---
 
-## 2. Spacing & rhythm
+## 1. 視覺層級
 
-- Spacing should come from a scale (4/8px base, or the project's tokens). Flag
-  one-off values: `margin-top: 13px`, `padding: 7px 11px`.
-- **Proximity encodes relationship.** A label 16px from its input but 8px from the
-  *previous* input is actively misleading.
-- Related items must be closer to each other than to unrelated items. This is the single
-  most common spacing bug.
-- Vertical rhythm: consistent section gaps. Flag alternating 24/40/32/48 with no reason.
+眼睛應先落到主要操作上，不需被告知。
 
-**Threshold:** more than ~3 distinct spacing values in one component usually means
-no system is being followed.
+- 每個畫面正好**一個**主要操作。兩個互相競爭的實心按鈕 = 沒有主要操作。
+- 尺寸、字重與顏色應對「什麼重要」達成一致。32px 淺灰標題旁邊是 14px 粗體黑字，訊號互相矛盾。
+- 標題必須正確巢狀（h1 → h2 → h3，不可跳級）。這同時關乎層級與無障礙。
+- 瞇眼測試：心裡把畫面模糊——重要區塊是否仍佔主導？
+
+**常見失敗：** 每張卡片視覺權重相同，頁面讀起來像無差別的網格，使用者只好線性掃過，而不是跳到真正重要的地方。
 
 ---
 
-## 3. Typography
+## 2. 間距與節奏
 
-- **Scale size:** more than 6–7 distinct font sizes in an app is unmanaged.
-- **Line length:** body text at 45–75 characters. Full-width paragraphs on a 1440px
-  screen are unreadable — flag any text block without a `max-width`.
-- **Line height:** ≥1.4 for body, tighter (1.1–1.25) for large headings. Flag body
-  text at 1.0–1.2.
-- **Minimum size:** 14px body (16px preferred; 16px on mobile inputs prevents iOS
-  zoom-on-focus). Flag 11px or 12px used for anything a user must read.
-- Font weight: 300 or lighter for body text on white fails legibility for many users.
-- Avoid ALL-CAPS for anything longer than a short label.
+- 間距應來自尺度（4/8px 基底，或專案的 token）。標記一次性數值：`margin-top: 13px`、`padding: 7px 11px`。
+- **接近程度表達關係。** 標籤離自己的輸入 16px，卻離*上一個*輸入只有 8px，是在主動誤導。
+- 相關項目必須比無關項目更靠近彼此。這是最常見的間距錯誤。
+- 垂直節奏：區塊間距一致。無理由地交替 24/40/32/48 要標記。
+
+**門檻：** 單一元件內超過約 3 種不同間距值，通常表示沒有遵循系統。
 
 ---
 
-## 4. Colour & contrast
+## 3. 字型排印
 
-Compute ratios — do not estimate. Use `scripts/contrast.mjs`.
+- **字級尺度：** 一個應用超過 6–7 種不同字級就是未管理。
+- **行長：** 內文 45–75 字元。在 1440px 螢幕上全寬段落難以閱讀——標記任何沒有 `max-width` 的文字區塊。
+- **行高：** 內文 ≥1.4，大標題可較緊（1.1–1.25）。標記行高 1.0–1.2 的內文。
+- **最小字級：** 內文 14px（建議 16px；行動輸入用 16px 可避免 iOS 聚焦時放大）。標記用 11px 或 12px 寫使用者必須閱讀的內容。
+- 字重：白色背景上用 300 或更細的內文，對許多使用者可讀性不足。
+- 避免對超過短標籤的內容使用全大寫。
 
-| Content | WCAG AA minimum |
+---
+
+## 4. 色彩與對比
+
+計算比值——不要估計。使用 `scripts/contrast.mjs`。
+
+| 內容 | WCAG AA 最低要求 |
 |---|---|
-| Body text (<18.66px, or <24px bold) | **4.5:1** |
-| Large text (≥18.66px bold, or ≥24px) | **3:1** |
-| UI component borders, icons, focus rings, form outlines | **3:1** |
-| Disabled elements | exempt, but should still read as disabled |
+| 內文（<18.66px，或 <24px 粗體） | **4.5:1** |
+| 大字（≥18.66px 粗體，或 ≥24px） | **3:1** |
+| UI 元件邊框、圖示、focus ring、表單外框 | **3:1** |
+| 停用元素 | 豁免，但仍應讀得出是停用狀態 |
 
-- **Colour must never be the only carrier of meaning.** Red/green status dots, "required
-  fields in red", chart series distinguished only by hue — all fail for colourblind
-  users. Add an icon, label, shape, or pattern.
-- Check dark mode separately if it exists; a palette that passes in light often fails
-  inverted. Semi-transparent overlays are the usual culprit.
-- Placeholder text is very often the worst offender in a codebase — check it.
+- **顏色絕不能是意義的唯一載體。** 紅／綠狀態點、「必填欄位用紅色」、圖表系列只靠色相區分——對色盲使用者全部失敗。加上圖示、標籤、形狀或圖案。
+- 若有深色模式，分開檢查；在淺色通過的色盤反轉後常會失敗。半透明疊層通常是元兇。
+- Placeholder 文字在程式碼庫裡往往是最嚴重的違規——務必檢查。
 
 ---
 
-## 5. Layout & responsiveness
+## 5. 版面與響應式
 
-Test 360px, 768px, 1024px, 1440px minimum.
+最低測試 360px、768px、1024px、1440px。
 
-- **360px is the real floor** — not 375px. Test it.
-- Horizontal scroll at any width is a bug. Usual causes: fixed `width` in px,
-  `white-space: nowrap` on long content, wide tables, unconstrained images.
-- Fixed heights (`height: 240px`) break when text wraps or a translation is longer.
-  Prefer `min-height`.
-- Tables: need a responsive strategy (horizontal scroll container, or card layout below
-  a breakpoint). A 9-column table on a phone is a broken screen.
-- Modals/sheets must fit small viewports and stay scrollable — check that the confirm
-  button is reachable at 360×640.
-- Content should reflow, not just shrink. Text scaled to 9px is not responsive.
+- **360px 才是真正下限**——不是 375px。要測。
+- 任何寬度出現橫向捲動都是 bug。常見原因：固定 px 的 `width`、長內容的 `white-space: nowrap`、寬表格、未約束的圖片。
+- 固定高度（`height: 240px`）在文字換行或翻譯變長時會壞掉。優先用 `min-height`。
+- 表格：需要響應式策略（橫向捲動容器，或斷點以下改卡片版面）。手機上的 9 欄表格是壞掉的畫面。
+- Modal／sheet 必須能塞進小視窗且可捲動——確認 360×640 時確認按鈕仍可觸及。
+- 內容應重排（reflow），而不只是縮小。縮到 9px 的文字不算響應式。
 
 ---
 
-## 6. Interactive states
+## 6. 互動狀態
 
-Every interactive element needs all five. Missing states are the most-skipped audit item.
+每個可互動元素都需要全部五種。缺少狀態是最常被跳過的稽核項目。
 
-| State | Requirement |
+| 狀態 | 要求 |
 |---|---|
-| Default | Looks interactive — affordance is visible without hovering |
-| Hover | Visible change (desktop only; never rely on it for information) |
-| **Focus** | **Visible ring, ≥3:1 against adjacent colour.** `outline: none` with no replacement is a P0 |
-| Active/pressed | Confirms the tap registered |
-| Disabled | Visually distinct; ideally explain *why* it's disabled |
+| Default | 看起來可互動——無需 hover 就能看出 affordance |
+| Hover | 可見變化（僅桌面；絕不要依賴它傳達資訊） |
+| **Focus** | **可見的 ring，相對相鄰顏色 ≥3:1。** 有 `outline: none` 卻無替代是 P0 |
+| Active／pressed | 確認點擊已被接收 |
+| Disabled | 視覺上有區別；理想上說明*為什麼*停用 |
 
-- Also: loading state (async actions need a spinner or skeleton and must block
-  double-submit), and selected/current state for nav and toggles.
-- **Touch targets ≥44×44px** (WCAG 2.5.5 / Apple HIG). A 16px icon button with no
-  padding is a P1 on mobile. Includes spacing between adjacent targets.
-- Cursor: `pointer` on clickables, and *not* on non-clickables.
+- 另外：載入狀態（非同步操作需要 spinner 或 skeleton，且必須阻擋重複送出），以及導覽與切換的 selected／current 狀態。
+- **觸控目標 ≥44×44px**（WCAG 2.5.5 / Apple HIG）。沒有 padding 的 16px 圖示按鈕在行動裝置上是 P1。包含相鄰目標之間的間距。
+- 游標：可點擊用 `pointer`，不可點擊的*不要*用。
 
 ---
 
-## 7. Forms
+## 7. 表單
 
-Forms are where users abandon. Audit them hard.
+表單是使用者放棄的地方。嚴格稽核。
 
-- Every input needs a **persistent visible label**. Placeholder-as-label is a P1 — it
-  vanishes on focus, fails a11y, and breaks autofill review.
-- Label must be programmatically associated (`for`/`id`, or wrapping `<label>`).
-- Errors: **inline, next to the field**, specific ("Password needs 8+ characters" not
-  "Invalid input"), and announced via `aria-live` / `aria-describedby`. A single error
-  summary at the top of a long form is a P1.
-- Validate at the right time: on blur or submit, not on every keystroke while typing.
-- Required vs optional must be explicit — mark whichever is rarer, and don't rely on
-  colour or a bare asterisk alone.
-- Set `type`, `inputmode`, and `autocomplete` (`email`, `tel`, `current-password`…) —
-  cheap, big mobile win.
-- Never destroy user input on a validation failure or navigation.
-- Destructive actions need confirmation *or* undo. Undo is better.
+- 每個輸入需要**持續可見的標籤**。用 placeholder 當標籤是 P1——聚焦時消失、無障礙失敗，也破壞自動填入檢視。
+- 標籤必須程式化關聯（`for`/`id`，或包住 `<label>`）。
+- 錯誤：**行內、緊鄰欄位**、具體（「密碼需 8 字以上」而非「輸入無效」），並透過 `aria-live` / `aria-describedby` 宣告。長表單頂部只有一個錯誤摘要是 P1。
+- 在正確時機驗證：blur 或 submit 時，而非每個按鍵。
+- 必填 vs 選填必須明確——標記較少見的那一方，不要只靠顏色或光禿禿的星號。
+- 設定 `type`、`inputmode` 與 `autocomplete`（`email`、`tel`、`current-password`…）——成本低，行動體驗收益大。
+- 驗證失敗或導覽時絕不銷毀使用者輸入。
+- 破壞性操作需要確認*或*復原。復原更好。
 
 ---
 
-## 8. Content & microcopy
+## 8. 內容與微文案
 
-- **Button labels must name the action:** "Save changes", not "OK"/"Submit".
-- No unexplained jargon or internal system names leaking into the UI.
-- Error messages must say what happened *and* what to do next. "Error 500" is a
-  failure of the UI, not of the user.
-- Consistent terminology — pick "delete" or "remove" and use it everywhere.
-- Sentence case for UI text is more readable than Title Case; either is fine, but
-  be consistent.
-- Truncation must be avoidable: if a name is cut off, expose the full value somewhere
-  (tooltip, `title`, expandable).
-- Mixed-language UI (common in these projects): check for stray untranslated strings
-  and that CJK text has adequate line-height (CJK needs ≥1.5–1.7).
+- **按鈕標籤必須點名動作：**「儲存變更」，不是「確定」／「送出」。
+- 不要把未解釋的術語或內部系統名稱洩漏到 UI。
+- 錯誤訊息必須說明發生了什麼*以及*接下來該做什麼。「Error 500」是 UI 的失敗，不是使用者的。
+- 術語一致——選定「刪除」或「移除」並到處使用。
+- UI 文字用 sentence case 比 Title Case 更易讀；兩者皆可，但要一致。
+- 截斷必須可避免：名稱被切掉時，某處要能看到完整值（tooltip、`title`、可展開）。
+- 混合語言 UI（這類專案常見）：檢查漏翻字串，以及 CJK 文字是否有足夠行高（CJK 需要 ≥1.5–1.7）。
 
 ---
 
-## 9. Feedback & system state
+## 9. 回饋與系統狀態
 
-Nielsen's first heuristic: the system should always keep the user informed.
+Nielsen 第一原則：系統應隨時讓使用者知情。
 
-- Every async action produces visible feedback within ~100ms, and it must be
-  **near the trigger** — a toast in the corner for an inline edit is easy to miss.
-- Distinguish the four states properly: loading, empty, error, success. Most UIs
-  implement loading and success and forget the other two.
-- **Empty states** must explain what goes here and offer the action to create it.
-  A blank panel is a dead end.
-- Long operations: show progress, not an indefinite spinner. Skeletons that match the
-  final layout beat centred spinners (less layout shift).
-- Optimistic updates need a rollback path when the request fails.
+- 每個非同步操作在約 100ms 內產生可見回饋，且必須**靠近觸發點**——行內編輯的 toast 跑到角落很容易錯過。
+- 正確區分四種狀態：載入、空、錯誤、成功。多數 UI 做了載入與成功，忘了另外兩個。
+- **空狀態**必須說明這裡放什麼，並提供建立的動作。空白面板是死胡同。
+- 長時間操作：顯示進度，不是無限 spinner。符合最終版面的 skeleton 勝過置中 spinner（較少 layout shift）。
+- 樂觀更新在請求失敗時需要回滾路徑。
 
 ---
 
-## 10. Navigation & information architecture
+## 10. 導覽與資訊架構
 
-- User can always answer: where am I, how do I get back, what else is here.
-- Current location is marked in nav (not just by URL).
-- Back button and browser history behave sanely; modals shouldn't trap it.
-- Destructive or irreversible steps are not adjacent to routine ones.
-- Grouping matches user mental models, not the backend schema or team org chart.
-- Breadcrumbs for hierarchies more than 2 levels deep.
-
----
-
-## 11. Accessibility (beyond contrast)
-
-- **Keyboard:** every interactive element reachable by Tab, in a logical order, and
-  operable by Enter/Space. `<div onClick>` with no `tabindex`/`role`/key handler is a
-  P0 — prefer a real `<button>`.
-- **Semantics:** use `<button>`, `<a>`, `<nav>`, `<main>`, `<table>` for their purpose.
-  ARIA is a patch for when you can't; native elements are better.
-- Images: meaningful ones need descriptive `alt`; decorative ones need `alt=""`.
-  Never `alt="image"`.
-- Icon-only buttons need an accessible name (`aria-label` or visually-hidden text).
-- Focus management: opening a modal moves focus in and traps it; closing returns focus
-  to the trigger.
-- Dynamic content changes announced (`aria-live="polite"` for status, `assertive` sparingly).
-- Respect `prefers-reduced-motion` — required for vestibular safety, and trivial to add.
-- Zoom to 200% must not break layout or hide content.
-- Page has a `lang` attribute and a unique, descriptive `<title>`.
+- 使用者隨時能回答：我在哪、怎麼回去、這裡還有什麼。
+- 導覽中標示目前位置（不只靠 URL）。
+- 返回按鈕與瀏覽器歷史行為合理；modal 不應困住它。
+- 破壞性或不可逆步驟不要緊鄰日常操作。
+- 分組符合使用者心智模型，而非後端 schema 或團隊組織圖。
+- 超過 2 層的階層用麵包屑。
 
 ---
 
-## 12. Consistency & design-system adherence
+## 11. 無障礙（對比以外）
 
-- Same concept → same component. Three different card styles for the same entity is a
-  P2 with wide blast radius.
-- Values come from tokens. Hardcoded `#3b82f6` next to a `primary` token is a finding.
-- Icon set is uniform in style and weight; don't mix outline and filled arbitrarily.
-- Border radius, shadow depth, and transition duration follow a small set of steps.
-- Component variants match the library's intended API rather than being overridden with
-  `!important` / deep selectors — that's a maintainability smell worth flagging.
+- **鍵盤：** 每個可互動元素可用 Tab 到達、順序合理，並可用 Enter／Space 操作。`<div onClick>` 沒有 `tabindex`/`role`/鍵盤處理是 P0——優先用真正的 `<button>`。
+- **語意：** 依用途使用 `<button>`、`<a>`、`<nav>`、`<main>`、`<table>`。ARIA 是無法用原生時的補丁；原生元素更好。
+- 圖片：有意義的需要描述性 `alt`；裝飾性用 `alt=""`。絕不 `alt="image"`。
+- 僅圖示按鈕需要可存取名稱（`aria-label` 或視覺隱藏文字）。
+- Focus 管理：開啟 modal 時移入並困住 focus；關閉時回到觸發點。
+- 動態內容變更要宣告（狀態用 `aria-live="polite"`，`assertive` 少用）。
+- 尊重 `prefers-reduced-motion`——前庭安全必要，且很容易加。
+- 放大到 200% 不可破壞版面或隱藏內容。
+- 頁面有 `lang` 屬性與獨特、描述性的 `<title>`。
 
 ---
 
-## Also worth checking (cheap, high value)
+## 12. 一致性與設計系統遵循
 
-- **Perceived performance:** layout shift on load (`width`/`height` on images and
-  embeds), unoptimised hero images, fonts causing FOUT/FOIT.
-- **Motion:** transitions 150–300ms for UI feedback. >500ms feels sluggish; animating
-  `width`/`height`/`top` instead of `transform`/`opacity` causes jank.
-- **Z-index sanity:** ad-hoc `z-index: 9999` values indicate a stacking problem that
-  will bite later.
-- **Text selection / copyability:** don't disable selection on content users need to copy.
+- 同一概念 → 同一元件。同一實體三種不同卡片樣式是影響範圍大的 P2。
+- 數值來自 token。硬編碼 `#3b82f6` 旁邊有 `primary` token 就是發現。
+- 圖示集在風格與字重上統一；不要任意混用線框與實心。
+- 圓角、陰影深度與過渡時間遵循一小組階梯。
+- 元件變體符合函式庫的預期 API，而非用 `!important`／深層選擇器覆寫——這是值得標記的可維護性異味。
+
+---
+
+## 也值得檢查（成本低、價值高）
+
+- **感知效能：** 載入時的 layout shift（圖片與嵌入物的 `width`/`height`）、未優化的 hero 圖、造成 FOUT／FOIT 的字型。
+- **動態效果：** UI 回饋的過渡 150–300ms。>500ms 感覺遲鈍；動畫化 `width`/`height`/`top` 而非 `transform`/`opacity` 會造成卡頓。
+- **Z-index 理智：** 臨時的 `z-index: 9999` 表示堆疊問題，之後會咬人。
+- **文字選取／可複製性：** 不要在使用者需要複製的內容上停用選取。

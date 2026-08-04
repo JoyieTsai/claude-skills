@@ -1,22 +1,19 @@
-# Mode B — Auditing an implemented project
+# 模式 B — 稽核已實作的專案
 
-Static review of the real UI code. Goal: findings anchored to `file:line` that the user
-can act on immediately.
+對真實 UI 程式碼做靜態審查。目標：錨定到 `file:line`、使用者能立刻採取行動的發現。
 
-## Step 1 — Scope it
+## 步驟 1 — 界定範圍
 
-Auditing every file in a large app produces a shallow report. Narrow first:
+稽核大型應用的每個檔案只會產出浮淺報告。先縮小：
 
-- If the user named a route, component, or feature → audit that and its dependencies.
-- If not → ask which surface matters, or pick the highest-traffic entry points
-  (login, home/dashboard, the main list view, the primary form) and **say what you chose**.
+- 若使用者點名路由、元件或功能 → 稽核它與其依賴。
+- 若沒有 → 詢問哪個介面重要，或選最高流量的進入點（登入、首頁／儀表板、主要列表、主要表單），並**說明你選了什麼**。
 
-Rule of thumb: 3–8 screens or 15–30 components is a real audit. More than that, and you
-are skimming — better to go deep on the important surface and say what you skipped.
+經驗法則：3–8 個畫面或 15–30 個元件才是真正的稽核。再多就是略讀——寧可在重要介面深挖，並說明跳過了什麼。
 
-## Step 2 — Read the design system before the components
+## 步驟 2 — 先讀設計系統，再讀元件
 
-You cannot flag an inconsistency without knowing the standard. Read config first:
+不知道標準就無法標記不一致。先讀設定：
 
 ```bash
 # tokens / theme
@@ -25,113 +22,93 @@ fd -H -t f '(variables|settings|theme|tokens|_vars)\.(s?css|less)$' -E node_modu
 rg -n '^\s*(--[\w-]+|\$[\w-]+)\s*:' --glob '!node_modules' -g '*.{css,scss,less}' | head -60
 ```
 
-Note the spacing scale, type scale, colour tokens, radius and shadow steps. These are
-your comparison baseline for dimension 12.
+記下間距尺度、字級尺度、色彩 token、圓角與陰影階梯。這些是維度 12 的比較基準。
 
-## Step 3 — Sweep for high-signal patterns
+## 步驟 3 — 掃描高訊號模式
 
-These greps find real bugs fast. Verify each hit in context — many are false positives.
+這些 grep 能快速找到真 bug。每筆命中都要在脈絡中驗證——許多是假陽性。
 
 ```bash
-# --- Accessibility: usually the densest source of true P0/P1 ---
-rg -n 'outline:\s*(none|0)' --glob '!node_modules'                 # killed focus ring
-rg -n '<img(?![^>]*\balt=)' -P --glob '!node_modules'              # missing alt
+# --- 無障礙：通常是真正 P0/P1 最密集的來源 ---
+rg -n 'outline:\s*(none|0)' --glob '!node_modules'                 # 殺掉了 focus ring
+rg -n '<img(?![^>]*\balt=)' -P --glob '!node_modules'              # 缺少 alt
 rg -n 'onClick|@click' --glob '!node_modules' -g '*.{vue,jsx,tsx,html}' \
-   | rg -v '<(button|a|input|select|textarea|v-btn|VBtn|NuxtLink|RouterLink)'  # non-semantic clickable
-rg -n 'tabindex=["\x27]-?[1-9]' --glob '!node_modules'             # tabindex hacks
-rg -n 'placeholder=' --glob '!node_modules' -g '*.{vue,jsx,tsx,html}'  # then check each has a real label
-rg -n 'aria-hidden' --glob '!node_modules'                         # hiding focusable content?
+   | rg -v '<(button|a|input|select|textarea|v-btn|VBtn|NuxtLink|RouterLink)'  # 非語意可點擊
+rg -n 'tabindex=["\x27]-?[1-9]' --glob '!node_modules'             # tabindex 技巧
+rg -n 'placeholder=' --glob '!node_modules' -g '*.{vue,jsx,tsx,html}'  # 再檢查每個是否有真正標籤
+rg -n 'aria-hidden' --glob '!node_modules'                         # 藏起可聚焦內容？
 rg -n 'user-select:\s*none' --glob '!node_modules'
 
-# --- Hardcoded values that should be tokens ---
+# --- 應為 token 的硬編碼值 ---
 rg -n '#[0-9a-fA-F]{3,8}\b' --glob '!node_modules' -g '*.{vue,jsx,tsx,css,scss}' | head -50
 rg -n ':\s*\d+px' --glob '!node_modules' -g '*.{css,scss,vue}' | head -60
 
-# --- Layout fragility ---
-rg -n '\bwidth:\s*\d{3,}px|\bheight:\s*\d{3,}px' --glob '!node_modules'   # fixed dims
+# --- 版面脆弱性 ---
+rg -n '\bwidth:\s*\d{3,}px|\bheight:\s*\d{3,}px' --glob '!node_modules'   # 固定尺寸
 rg -n 'white-space:\s*nowrap|overflow:\s*hidden' --glob '!node_modules'
-rg -n 'z-index:\s*\d{3,}' --glob '!node_modules'                   # stacking chaos
-rg -n 'position:\s*absolute' --glob '!node_modules' -c             # density signal
+rg -n 'z-index:\s*\d{3,}' --glob '!node_modules'                   # 堆疊混亂
+rg -n 'position:\s*absolute' --glob '!node_modules' -c             # 密度訊號
 
-# --- Escape hatches = design-system drift ---
+# --- 逃生艙 = 設計系統漂移 ---
 rg -n '!important' --glob '!node_modules' -c
 rg -n ':deep\(|::v-deep|/deep/' --glob '!node_modules'
 
-# --- Missing states ---
+# --- 缺少狀態 ---
 rg -n 'v-if|useState|isLoading|loading' --glob '!node_modules' -g '*.{vue,jsx,tsx}' | head -40
 rg -n 'await |\.then\(' --glob '!node_modules' -g '*.{vue,jsx,tsx}' | head -40
-# ^ for each async call: is there a loading state? an error state? a disabled submit?
+# ^ 對每個非同步呼叫：有載入狀態嗎？錯誤狀態？停用送出？
 
-# --- Motion safety ---
-rg -n 'prefers-reduced-motion' --glob '!node_modules'   # absence in an animated app is a finding
+# --- 動態安全 ---
+rg -n 'prefers-reduced-motion' --glob '!node_modules'   # 有動畫的應用缺少它就是發現
 rg -n 'transition|animation' --glob '!node_modules' -g '*.{css,scss}' -c
 ```
 
-If `rg`/`fd` are unavailable, fall back to `grep -rn` / `find`.
+若 `rg`/`fd` 不可用，退回 `grep -rn` / `find`。
 
-## Step 4 — Read the components properly
+## 步驟 4 — 認真讀元件
 
-Greps find symptoms; reading finds causes. For each in-scope component, read the whole
-file and check:
+Grep 找症狀；閱讀找原因。對每個範圍內的元件，讀完整個檔案並檢查：
 
-- **Semantics** — right element for the job, heading levels correct, landmarks present.
-- **All five interactive states** — especially focus. Trace where the style comes from;
-  it may be global (`assets/main.css`, a reset, the UI library's defaults). Do not report
-  "no focus style" without checking the global layer.
-- **Async completeness** — for every request: loading indicator, error surface,
-  empty result, double-submit guard. This is where most real P1s live.
-- **Responsive behaviour** — does it depend on a fixed width? What happens at 360px?
-- **Form correctness** — label association, `type`/`inputmode`/`autocomplete`, error
-  placement and announcement.
-- **Token use vs hardcoded values** — compare against Step 2's baseline.
+- **語意** — 正確的元素、標題層級正確、有地標。
+- **全部五種互動狀態** — 尤其 focus。追蹤樣式從哪來；可能是全域的（`assets/main.css`、reset、UI 函式庫預設）。未檢查全域層就不要報告「沒有 focus 樣式」。
+- **非同步完整性** — 對每個請求：載入指示、錯誤呈現、空結果、防重複送出。多數真正的 P1 住在這裡。
+- **響應式行為** — 是否依賴固定寬度？360px 時會怎樣？
+- **表單正確性** — 標籤關聯、`type`/`inputmode`/`autocomplete`、錯誤位置與宣告。
+- **Token 使用 vs 硬編碼** — 對照步驟 2 的基準。
 
-## Stack-specific notes
+## 各技術棧備註
 
 **Vue / Nuxt / Vuetify**
-- Vuetify gives you a11y and focus states largely for free — check whether they've been
-  overridden with `:deep()` or `!important`. Heavy deep-selector use is a finding in itself.
-- `v-model` on custom components: does it handle the invalid/error state?
-- Prefer Vuetify's `density`, `variant`, `color` props over custom CSS; overriding
-  suggests the wrong component was chosen.
-- Nuxt: check `<Head>`/`useHead` for `title` and `lang`; `<NuxtLink>` vs raw `<a>` for
-  internal routes.
-- Watch for `v-html` (both XSS and unstyled-content risk).
+- Vuetify 大致免費提供無障礙與 focus 狀態——檢查是否被 `:deep()` 或 `!important` 覆寫。大量深層選擇器本身就是發現。
+- 自訂元件上的 `v-model`：有處理 invalid／error 狀態嗎？
+- 優先用 Vuetify 的 `density`、`variant`、`color` props，而非自訂 CSS；覆寫暗示選錯了元件。
+- Nuxt：檢查 `<Head>`/`useHead` 的 `title` 與 `lang`；內部路由用 `<NuxtLink>` 而非裸 `<a>`。
+- 留意 `v-html`（XSS 與未樣式化內容風險）。
 
 **React / Tailwind**
-- Long utility strings hide inconsistency — extract and compare the actual values across
-  sibling components. Two cards with `p-4` and `p-5` for the same role is dimension 12.
-- Check for arbitrary values (`w-[327px]`, `text-[13px]`) — these bypass the scale.
-- `focus:outline-none` without `focus-visible:ring-*` is a P0.
-- Conditional class strings: verify every branch produces a valid, contrasting result —
-  especially disabled and error variants.
-- Component libraries (Radix, Headless UI, shadcn) handle focus trap and ARIA; hand-rolled
-  modals/dropdowns usually don't. Check which you have.
+- 長 utility 字串隱藏不一致——抽出並比較相鄰元件的實際值。兩個同角色卡片用 `p-4` 與 `p-5` 就是維度 12。
+- 檢查任意值（`w-[327px]`、`text-[13px]`）——這些繞過尺度。
+- `focus:outline-none` 卻沒有 `focus-visible:ring-*` 是 P0。
+- 條件式 class 字串：確認每個分支都產出有效、對比足夠的結果——尤其停用與錯誤變體。
+- 元件函式庫（Radix、Headless UI、shadcn）處理 focus trap 與 ARIA；手寫 modal／dropdown 通常沒有。確認你用的是哪種。
 
 **Bootstrap**
-- Verify utility classes exist in the version in use (v4 vs v5 renamed many: `ml-*` →
-  `ms-*`, `.form-group` removed). A typo'd class silently does nothing — a real and
-  invisible bug.
-- `.sr-only` (v4) vs `.visually-hidden` (v5).
+- 確認 utility class 存在於使用的版本（v4 vs v5 改名很多：`ml-*` → `ms-*`、`.form-group` 移除）。打錯的 class 默默不做任何事——真實且隱形的 bug。
+- `.sr-only`（v4）vs `.visually-hidden`（v5）。
 
-**Plain HTML/CSS**
-- Check the reset/normalize doesn't strip focus outlines.
-- Check `<meta name="viewport" content="width=device-width, initial-scale=1">` exists and
-  does not set `maximum-scale=1` or `user-scalable=no` (blocks zoom — an a11y failure).
+**純 HTML/CSS**
+- 檢查 reset／normalize 沒有剝掉 focus outline。
+- 檢查存在 `<meta name="viewport" content="width=device-width, initial-scale=1">`，且未設 `maximum-scale=1` 或 `user-scalable=no`（阻擋縮放——無障礙失敗）。
 
-## Step 5 — Optional live verification
+## 步驟 5 — 可選的即時驗證
 
-Run `scripts/capture.mjs` (see SKILL.md) if the app starts. Screenshots catch what code
-review cannot: actual rendered spacing, overflow at 360px, real computed contrast, and
-whether the page even looks like the design.
+若應用可啟動，執行 `scripts/capture.mjs`（見 SKILL.md）。截圖抓住程式碼審查抓不到的：實際渲染間距、360px 的 overflow、真實計算對比，以及頁面是否真的像設計。
 
-Read the resulting PNGs. Cross-check axe findings against your static ones — agreement
-raises confidence; a static finding the browser contradicts should be dropped.
+讀取產出的 PNG。交叉比對 axe 發現與靜態發現——一致提高信心；瀏覽器反證的靜態發現應刪除。
 
-## What not to report
+## 不要報告什麼
 
-- Anything already handled globally that you didn't check for.
-- Code-quality issues with no user-facing effect (naming, file structure, dead CSS) —
-  out of scope; that's a code review.
-- Framework defaults presented as the team's mistakes.
-- A long list of hardcoded hex values as separate findings. Collapse into one finding:
-  "N hardcoded colours bypass the theme — here are the 5 worst and the full list."
+- 已全域處理但你沒檢查到的。
+- 沒有使用者面向影響的程式碼品質問題（命名、檔案結構、死 CSS）——超出範圍；那是 code review。
+- 把框架預設當成團隊的錯誤。
+- 一長串硬編碼 hex 當成個別發現。合併為一項：「N 個硬編碼顏色繞過主題——這裡是最糟的 5 個與完整清單。」

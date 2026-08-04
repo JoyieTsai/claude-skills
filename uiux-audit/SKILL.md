@@ -1,125 +1,100 @@
 ---
 name: uiux-audit
-description: Audit UI/UX quality and produce a prioritised findings report. Two modes — (A) review design files (Figma exports, screenshots, mockups, images of a UI) and (B) audit a project's implemented UI (static code review of templates/CSS/components, plus optional live browser screenshots and axe-core a11y scan). Use when asked to "audit UI", "review UX", "check accessibility", "看一下這個設計", "審查介面", "UI/UX 檢查", "review this mockup", "why does this page look off", or before shipping a redesign. Stack-agnostic — works with Vue/Nuxt/Vuetify, React/Tailwind, Bootstrap, or plain HTML/CSS.
+description: 稽核 UI/UX 品質並產出依優先順序排列的發現報告。兩種模式——(A) 審查設計檔（Figma 匯出、截圖、mockup、介面圖片）與 (B) 稽核專案已實作的 UI（模板/CSS/元件的靜態程式碼審查，加上可選的即時瀏覽器截圖與 axe-core 無障礙掃描）。在被要求「audit UI」、「review UX」、「check accessibility」、「看一下這個設計」、「審查介面」、「UI/UX 檢查」、「review this mockup」、「why does this page look off」，或 redesign 上線前使用。與技術棧無關——適用 Vue/Nuxt/Vuetify、React/Tailwind、Bootstrap 或純 HTML/CSS。
 ---
 
-# UI/UX Audit
+# UI/UX 稽核
 
-Produce a **prioritised, evidence-backed** audit. Every finding must cite a concrete
-location (file:line, or a region of an image) and state what to change. No vague advice.
+產出**依優先順序、有證據支持**的稽核報告。每項發現都必須引用具體位置（file:line，或圖片中的區域），並說明要改什麼。禁止空泛建議。
 
-## Step 1 — Pick the mode
+## 步驟 1 — 選擇模式
 
-| Signal | Mode |
+| 信號 | 模式 |
 |---|---|
-| User attaches/points to an image, Figma export, PDF, mockup, screenshot | **A — Design review** |
-| User points at a repo, route, component, or says "this project/page" | **B — Project audit** |
-| Both are available | Run **B**, and use the design as the intended-state reference (design-vs-built diff) |
+| 使用者附加／指向圖片、Figma 匯出、PDF、mockup、截圖 | **A — 設計審查** |
+| 使用者指向 repo、路由、元件，或說「這個專案／頁面」 | **B — 專案稽核** |
+| 兩者皆有 | 執行 **B**，並以設計作為預期狀態參考（設計 vs 實作差異） |
 
-If genuinely ambiguous, ask once. Otherwise pick and proceed.
+若確實模糊，詢問一次。否則選定後繼續。
 
-## Step 2 — Establish the baseline (do not skip)
+## 步驟 2 — 建立基準（不可跳過）
 
-An audit without context produces generic advice. Before judging anything, determine:
+沒有脈絡的稽核只會產出通用建議。在評判任何東西之前，先釐清：
 
-1. **What is this screen for?** The primary user task. A finding only matters if it
-   obstructs that task.
-2. **Who uses it?** Internal admin tool vs public marketing site vs mobile web have
-   different bars. Ask the user if not inferable.
-3. **What is the existing system?** Read the design tokens / theme config / utility
-   config *first*, so you flag deviations from *their* system rather than imposing yours.
-   - Vuetify: `vuetify.config.*`, `theme` in `nuxt.config.*`, `settings.scss`
-   - Tailwind: `tailwind.config.*`, `@theme` in CSS, `index.css`
-   - Bootstrap: `_variables.scss`, `custom.scss`
-   - Plain: `:root` custom properties
-4. **Is there a stated design intent?** `CLAUDE.md`, `README`, design docs, style guide.
+1. **這個畫面是做什麼的？** 主要使用者任務。一項發現只有在妨礙該任務時才重要。
+2. **誰在用？** 內部管理工具 vs 公開行銷網站 vs 行動網頁，標準不同。若無法推斷，請詢問使用者。
+3. **現有系統是什麼？** 先讀設計 token／主題設定／utility 設定，才能標出偏離*他們*系統的地方，而不是硬套你的品味。
+   - Vuetify：`vuetify.config.*`、`nuxt.config.*` 裡的 `theme`、`settings.scss`
+   - Tailwind：`tailwind.config.*`、CSS 裡的 `@theme`、`index.css`
+   - Bootstrap：`_variables.scss`、`custom.scss`
+   - 純 CSS：`:root` 自訂屬性
+4. **有沒有明示的設計意圖？** `CLAUDE.md`、`README`、設計文件、風格指南。
 
-State the baseline in one short paragraph at the top of the report. If you had to
-assume something, say so there.
+在報告開頭用一小段說明基準。若有假設，寫在那裡。
 
-## Step 3 — Audit against the rubric
+## 步驟 3 — 依評分表稽核
 
-Read `references/rubric.md` — 12 dimensions, each with concrete checks and thresholds.
-Work through it; do not freestyle. Then:
+讀取 `references/rubric.md`——12 個維度，各有具體檢查項與門檻。照表走，不要自由發揮。然後：
 
-- **Mode A** → also read `references/design-review.md`
-- **Mode B** → also read `references/code-audit.md`
+- **模式 A** → 另外讀 `references/design-review.md`
+- **模式 B** → 另外讀 `references/code-audit.md`
 
-Cover every dimension. If a dimension is not applicable or you could not assess it
-(e.g. hover states are invisible in a static image), say so explicitly rather than
-staying silent — silence reads as "checked, fine".
+涵蓋每個維度。若某維度不適用或無法評估（例如靜態圖片看不到 hover 狀態），明確寫出，不要沉默——沉默會被解讀成「已檢查，沒問題」。
 
-## Step 4 — Verify before reporting
+## 步驟 4 — 報告前先驗證
 
-Weak audits are full of plausible-but-wrong findings. Before writing each one:
+薄弱的稽核充滿「聽起來合理但其實錯」的發現。寫下每一項之前：
 
-- **Re-read the source.** Confirm the line still says what you think. Contrast ratios:
-  compute them, don't eyeball — see `scripts/contrast.mjs`.
-- **Check for an existing answer.** A missing focus style may be handled globally; a
-  hardcoded colour may be an intentional one-off. Grep before claiming.
-- **Ask "so what?"** If you cannot name a user who is blocked, slowed, or confused,
-  it is P3 at best — or not a finding.
+- **重讀來源。** 確認那一行仍是你以為的內容。對比：用計算，不要用目測——見 `scripts/contrast.mjs`。
+- **檢查是否已有解法。** 缺少 focus 樣式可能是全域處理；硬編碼顏色可能是刻意的特例。宣稱前先 grep。
+- **問「那又怎樣？」** 若說不出哪個使用者被擋住、變慢或搞混，最多是 P3——或根本不算發現。
 
-Drop anything that fails these. A short report of real problems beats a long one
-padded with noise.
+通不過這些的就刪掉。短而真實的報告，勝過塞滿雜訊的長報告。
 
-## Step 5 — Report
+## 步驟 5 — 產出報告
 
-Write to `UIUX-AUDIT.md` in the project root (Mode B) or the directory holding the
-design file (Mode A). If the file exists, overwrite it but preserve any section titled
-`## Decisions` — that is the user's.
+寫到專案根目錄的 `UIUX-AUDIT.md`（模式 B），或設計檔所在目錄（模式 A）。若檔案已存在，覆寫它，但保留標題為 `## Decisions` 的區塊——那是使用者的。
 
-Use the structure in `references/report-template.md`. Severity:
+使用 `references/report-template.md` 的結構。嚴重度：
 
-| | Meaning | Bar |
+| | 意義 | 門檻 |
 |---|---|---|
-| **P0** | Blocks a user from completing the primary task, or a legal/a11y violation | Fix before ship |
-| **P1** | Task is completable but materially harder, slower, or error-prone | Fix this cycle |
-| **P2** | Inconsistency or friction a user would notice but work around | Backlog |
-| **P3** | Polish; no behavioural impact | Optional |
+| **P0** | 擋住使用者完成主要任務，或法律／無障礙違規 | 上線前必須修 |
+| **P1** | 任務可完成，但明顯更難、更慢或更容易出錯 | 本週期修 |
+| **P2** | 不一致或摩擦，使用者會注意到但能繞過 | 待辦 |
+| **P3** | 打磨；無行為影響 | 可選 |
 
-Rules:
-- Order by severity, then by blast radius (shared component > single page).
-- Cap at ~20 findings. If there are more, group repeated instances into one finding
-  with a list of locations, and say how many you collapsed.
-- Never invent a severity to pad the top. An audit that finds no P0 should say
-  "No P0 findings" — that is a valid, useful result.
+規則：
+- 先依嚴重度，再依影響範圍（共用元件 > 單一頁面）。
+- 上限約 20 項發現。若更多，把重複實例合併為一項並列出位置，說明合併了多少。
+- 不要為了墊高頂部而捏造嚴重度。沒有 P0 的稽核應寫「無 P0 發現」——這是有效且有用的結果。
 
-Then in chat: give the count by severity, the 3 findings you'd fix first, and the
-report path. Do not paste the whole report into chat.
+接著在對話中：給出各嚴重度數量、你會先修的 3 項發現，以及報告路徑。不要把整份報告貼進對話。
 
-## Step 6 — Fixing (only if asked)
+## 步驟 6 — 修復（僅在被要求時）
 
-Do not edit code during the audit; the report is the deliverable. If the user then
-asks for fixes, prefer this order and confirm before the risky tiers:
+稽核期間不要改程式碼；報告才是交付物。若使用者接著要求修復，優先依此順序，並在風險較高的層級先確認：
 
-1. **Safe** — add `alt`, `aria-label`, `label` association, `focus-visible`, `lang`,
-   `autocomplete`, touch-target padding, `width`/`height` on `<img>`. Apply freely.
-2. **Token swaps** — replace a hardcoded value with the existing token. Apply freely,
-   but verify the token resolves to a visually equivalent value.
-3. **Visual changes** — spacing, type scale, colour, layout. These change how the
-   product looks. Confirm scope with the user first.
-4. **Structural** — component splits, flow reordering, new states. Propose, don't do.
+1. **安全** — 加 `alt`、`aria-label`、`label` 關聯、`focus-visible`、`lang`、`autocomplete`、觸控目標 padding、`<img>` 的 `width`/`height`。可直接套用。
+2. **Token 替換** — 用既有 token 取代硬編碼值。可直接套用，但確認 token 解析後視覺上等價。
+3. **視覺變更** — 間距、字級、顏色、版面。會改變產品外觀。先與使用者確認範圍。
+4. **結構性** — 元件拆分、流程重排、新狀態。只提案，不動手。
 
-After tier 1–2 edits, re-run the relevant check to confirm the fix landed.
+第 1–2 層編輯後，重跑相關檢查以確認修復生效。
 
-## Optional — Live browser evidence (Mode B)
+## 可選 — 即時瀏覽器證據（模式 B）
 
-Static review misses rendered spacing, overflow, and real contrast. If the app can be
-started, `scripts/capture.mjs` screenshots routes at 4 breakpoints and runs axe-core.
+靜態審查會漏掉渲染後的間距、overflow 與真實對比。若應用可啟動，`scripts/capture.mjs` 會在 4 個斷點截圖並執行 axe-core。
 
 ```bash
-# 1. start the dev server yourself (npm run dev / nuxt dev / vite) and note the URL
-# 2. then:
+# 1. 自行啟動開發伺服器（npm run dev / nuxt dev / vite）並記下 URL
+# 2. 然後：
 node ~/.claude/skills/uiux-audit/scripts/capture.mjs \
   --url http://localhost:3000 \
   --routes /,/login,/dashboard \
   --out ./.uiux-audit
 ```
 
-It writes PNGs plus `axe-report.json`. **Read the PNGs with the Read tool** — that is
-the point; the files alone prove nothing. Treat axe output as leads to verify, not
-findings to copy: it has false positives, and it catches maybe a third of real a11y
-problems. Keyboard-only navigation and focus order still need your judgement.
+會寫入 PNG 與 `axe-report.json`。**用 Read 工具讀取 PNG**——重點在此；光有檔案證明不了什麼。把 axe 輸出當線索去驗證，不要直接當發現複製：它有假陽性，且大概只抓到真實無障礙問題的三分之一。僅鍵盤操作與 focus 順序仍需你的判斷。
 
-If the server won't start, say so and deliver the static audit. Don't stall on it.
+若伺服器無法啟動，說明情況並交付靜態稽核。不要卡在這上面。

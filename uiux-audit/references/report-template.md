@@ -1,92 +1,90 @@
-# Report template
+# 報告模板
 
-Copy this structure. Keep it tight — a reader should get the picture from the summary
-table alone, and drill down only where they care.
+複製此結構。保持精簡——讀者應能只從摘要表掌握全貌，只在在乎的地方深入。
 
 ---
 
 ```markdown
-# UI/UX Audit — <project / screen name>
+# UI/UX 稽核 — <專案／畫面名稱>
 
-**Date:** <YYYY-MM-DD>
-**Mode:** Design review | Project audit | Both (design-vs-built)
-**Scope:** <exactly what was examined — routes, components, or design frames>
-**Not covered:** <what you skipped and why — be honest, this protects the reader>
+**日期：** <YYYY-MM-DD>
+**模式：** 設計審查 | 專案稽核 | 兩者（設計 vs 實作）
+**範圍：** <確實檢查了什麼——路由、元件或設計幀>
+**未涵蓋：** <跳過了什麼與原因——誠實寫，這保護讀者>
 
-## Baseline
+## 基準
 
-<One paragraph: what this screen is for, who uses it, what design system is in place,
-and any assumption you had to make. If the user never told you the audience, say
-"assumed internal admin users" rather than silently picking a bar.>
+<一段：這個畫面是做什麼的、誰在用、有什麼設計系統，
+以及你做了哪些假設。若使用者從未說明受眾，寫
+「假設為內部管理使用者」，而非默默選定標準。>
 
-## Summary
+## 摘要
 
-| Severity | Count |
+| 嚴重度 | 數量 |
 |---|---|
-| P0 — blocks the task / a11y violation | 0 |
-| P1 — materially harder | 0 |
-| P2 — noticeable friction | 0 |
-| P3 — polish | 0 |
+| P0 — 擋住任務／無障礙違規 | 0 |
+| P1 — 明顯更難 | 0 |
+| P2 — 可察覺的摩擦 | 0 |
+| P3 — 打磨 | 0 |
 
-**Fix first:** <the 3 highest-leverage items, one line each — usually not simply the
-3 highest-severity ones. Weight by blast radius and effort.>
+**優先修復：** <槓桿最高的 3 項，各一行——通常不只是
+嚴重度最高的 3 項。依影響範圍與成本權衡。>
 
-**Overall:** <2–3 sentences. What is genuinely good here, and what is the one systemic
-theme behind most findings. Auditing is not only fault-finding — if the spacing system
-is well followed, say so; it tells the user what to protect.>
+**整體：** <2–3 句。這裡真正好的是什麼，以及多數發現背後
+的一個系統性主題。稽核不只是找錯——若間距系統遵循良好，
+說出來；這告訴使用者該保護什麼。>
 
 ---
 
-## Findings
+## 發現
 
-### P0-1 · <short imperative title>
+### P0-1 · <簡短祈使式標題>
 
-- **Where:** `src/components/LoginForm.vue:42-58`  ← or `login.png — email field, mid-left`
-- **Dimension:** Interactive states
-- **Problem:** <what is wrong, factually. Include the measured value where relevant:
-  "contrast 2.8:1, AA requires 4.5:1".>
-- **Impact:** <who is affected and how. "Keyboard-only and screen-reader users cannot
-  tell which field is focused, making the form unusable without a mouse." If you cannot
-  write this sentence convincingly, the finding is not P0.>
-- **Fix:** <specific and actionable — the actual property, token, or element to change.
-  Include a snippet when it is short and unambiguous.>
-- **Effort:** S | M | L
+- **位置：** `src/components/LoginForm.vue:42-58`  ← 或 `login.png — 電子郵件欄位，中左`
+- **維度：** 互動狀態
+- **問題：** <事實性說明錯在哪。相關處附上測量值：
+  「對比 2.8:1，AA 要求 4.5:1」。>
+- **影響：** <誰受影響、如何。「僅鍵盤與螢幕閱讀器使用者無法
+  判斷哪個欄位有焦點，使表單在無滑鼠時無法使用。」若你無法
+  有說服力地寫出這句，這項發現就不是 P0。>
+- **修復：** <具體且可執行——實際要改的屬性、token 或元素。
+  短且明確時附上片段。>
+- **成本：** S | M | L
 
-### P1-1 · <title>
+### P1-1 · <標題>
 ...
 ```
 
 ---
 
-## Writing the findings
+## 撰寫發現
 
-**Titles** are imperative and specific: "Add visible focus ring to primary buttons",
-not "Focus issues" or "Accessibility problem".
+**標題**是祈使且具體的：「為主要按鈕加上可見的 focus ring」，
+不是「Focus 問題」或「無障礙問題」。
 
-**One problem per finding.** If a component has bad contrast *and* no focus state, that
-is two findings — they have different fixes and different severities.
+**一項發現一個問題。** 若元件對比差*又*沒有 focus 狀態，那是
+兩項發現——修復不同、嚴重度也不同。
 
-**Collapse repetition.** The same missing `alt` across 14 images is one finding listing
-14 locations, not 14 findings. Say how many you collapsed.
+**合併重複。** 14 張圖片都缺 `alt` 是一項發現列出 14 個位置，
+不是 14 項發現。說明合併了多少。
 
-**Show the measurement.** "Contrast 3.1:1 (AA needs 4.5:1)", "38×38px target (needs
-44×44px)", "line-height 1.15 on 15px body text". Numbers make a finding arguable in the
-right way — the reader can check you.
+**出示測量。** 「對比 3.1:1（AA 需 4.5:1）」、「38×38px 目標（需
+44×44px）」、「15px 內文行高 1.15」。數字讓發現以正確的方式
+可爭論——讀者可以核對你。
 
-**Fixes must be concrete.** Not "improve the spacing" but "change `mt-3` to `mt-6` so the
-label groups with its own input rather than the field above". Where the project has a
-token for it, name the token.
+**修復必須具體。** 不是「改善間距」，而是「把 `mt-3` 改成 `mt-6`，
+讓標籤與自己的輸入成組，而非與上方欄位」。專案有對應 token 時，
+點名 token。
 
-**Effort:** S = under an hour, one file. M = a few files or a component change.
-L = structural, needs design input or a migration.
+**成本：** S = 一小時內、一個檔案。M = 幾個檔案或元件變更。
+L = 結構性，需要設計輸入或遷移。
 
-## Things that weaken a report
+## 會削弱報告的事
 
-- Padding the count with P3 nitpicks to look thorough. The reader loses trust and stops
-  reading, including the P0 at the top.
-- Findings that just restate a rubric line without evidence from *this* codebase.
-- "Consider possibly maybe reviewing whether..." — state the problem and the fix.
-- Reporting a preference as a defect. "I would have used a card here" is not a finding.
-  If it's a preference, put it in a short `## Suggestions` section at the end, clearly
-  separated, or leave it out.
-- Silence about what you could not check. Always fill in **Not covered**.
+- 用 P3 吹毛求疵墊高數量以顯得徹底。讀者失去信任並停止閱讀，
+  包括頂部的 P0。
+- 只重述評分表條文、沒有*這個*程式碼庫證據的發現。
+- 「考慮也許或許檢視是否……」——直接陳述問題與修復。
+- 把偏好當缺陷。「我這裡會用卡片」不是發現。若是偏好，放在
+  文末簡短的 `## Suggestions` 區塊，清楚分開，或乾脆不寫。
+- 對無法檢查的事沉默。務必填寫 **未涵蓋**。

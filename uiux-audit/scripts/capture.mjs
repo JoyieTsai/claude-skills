@@ -1,20 +1,20 @@
 #!/usr/bin/env node
-// Screenshot routes at multiple breakpoints and run an axe-core accessibility scan.
-// Requires a dev server already running, and Playwright available.
+// 在多個斷點對路由截圖，並執行 axe-core 無障礙掃描。
+// 需要開發伺服器已在執行，且 Playwright 可用。
 //
 //   node capture.mjs --url http://localhost:3000 --routes /,/login --out ./.uiux-audit
 //
-// Options:
-//   --url      base URL (required)
-//   --routes   comma-separated paths (default "/")
-//   --out      output dir (default "./.uiux-audit")
-//   --widths   comma-separated viewport widths (default 360,768,1024,1440)
-//   --full     full-page screenshots instead of viewport-only
-//   --no-axe   skip the accessibility scan
-//   --wait     extra ms to settle after load (default 600)
+// 選項：
+//   --url      基底 URL（必要）
+//   --routes   逗號分隔的路徑（預設 "/"）
+//   --out      輸出目錄（預設 "./.uiux-audit"）
+//   --widths   逗號分隔的視窗寬度（預設 360,768,1024,1440）
+//   --full     整頁截圖而非僅視窗
+//   --no-axe   略過無障礙掃描
+//   --wait     載入後額外等待的毫秒數（預設 600）
 //
-// Output: <out>/<route>__<width>.png, <out>/axe-report.json, <out>/summary.md
-// The PNGs are the point — read them with the Read tool afterwards.
+// 輸出：<out>/<route>__<width>.png、<out>/axe-report.json、<out>/summary.md
+// PNG 才是重點——之後用 Read 工具讀取它們。
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -29,10 +29,10 @@ const flag = name => argv.includes(`--${name}`);
 
 const baseUrl = opt('url');
 if (!baseUrl || flag('help') || flag('h')) {
-  console.log(`Usage: node capture.mjs --url http://localhost:3000 [--routes /,/login] [--out ./.uiux-audit]
+  console.log(`用法：node capture.mjs --url http://localhost:3000 [--routes /,/login] [--out ./.uiux-audit]
        [--widths 360,768,1024,1440] [--full] [--no-axe] [--wait 600]
 
-Start your dev server first (npm run dev / nuxt dev / vite), then run this.`);
+請先啟動開發伺服器（npm run dev / nuxt dev / vite），再執行此腳本。`);
   process.exit(baseUrl ? 0 : 2);
 }
 
@@ -43,9 +43,9 @@ const settle = Number(opt('wait', '600'));
 const fullPage = flag('full');
 const runAxe = !flag('no-axe');
 
-// Resolve deps from the project first (so a project pin wins), then from the skill's
-// own node_modules. `import` alone only searches upward from this file, which misses
-// the project when the skill lives in ~/.claude.
+// 先從專案解析依賴（專案鎖定優先），再從 skill 自己的
+// node_modules。單獨用 `import` 只會從此檔向上搜尋，當 skill
+// 位於 ~/.claude 時會找不到專案。
 const require = createRequire(import.meta.url);
 const skillRequire = createRequire(path.join(import.meta.dirname, '..', 'package.json'));
 const projectRequire = createRequire(path.join(process.cwd(), 'package.json'));
@@ -62,18 +62,18 @@ async function resolveDep(spec, entry) {
 let chromium;
 for (const spec of ['playwright', '@playwright/test']) {
   const mod = await resolveDep(spec);
-  // Playwright ships CJS: named exports are absent, `chromium` hangs off default.
+  // Playwright 以 CJS 發行：具名匯出不存在，`chromium` 掛在 default 上。
   chromium = mod?.chromium ?? mod?.default?.chromium;
   if (chromium) break;
 }
 if (!chromium) {
-  console.error(`Playwright not resolvable.
-Install in the skill:   (cd ${path.join(import.meta.dirname, '..')} && npm install)
-Or in the project:      npm i -D playwright && npx playwright install chromium`);
+  console.error(`無法解析 Playwright。
+在 skill 安裝：   (cd ${path.join(import.meta.dirname, '..')} && npm install)
+或在專案安裝：    npm i -D playwright && npx playwright install chromium`);
   process.exit(3);
 }
 
-// axe-core is optional; degrade gracefully rather than failing the whole capture.
+// axe-core 可選；優雅降級，不要讓整個截圖失敗。
 let axeSource = null;
 if (runAxe) {
   const { readFile } = await import('node:fs/promises');
@@ -83,7 +83,7 @@ if (runAxe) {
       break;
     } catch { /* try next */ }
   }
-  if (!axeSource) console.warn('! axe-core not resolvable — skipping a11y scan');
+  if (!axeSource) console.warn('! 無法解析 axe-core — 略過無障礙掃描');
 }
 
 await mkdir(outDir, { recursive: true });
@@ -105,7 +105,7 @@ for (const route of routes) {
       deviceScaleFactor: 2,
       isMobile,
       hasTouch: isMobile,
-      // Surfaces reduced-motion handling; also stabilises screenshots.
+      // 觸發 reduced-motion 處理；也穩定截圖。
       reducedMotion: 'no-preference',
     });
     const page = await context.newPage();
@@ -122,9 +122,9 @@ for (const route of routes) {
       const file = path.join(outDir, `${label}.png`);
       await page.screenshot({ path: file, fullPage });
 
-      // A missing/hostile viewport meta silently invalidates every mobile measurement
-      // below: Chromium falls back to a ~980px layout viewport, so nothing "overflows"
-      // and touch targets look fine. Check it before trusting the mobile numbers.
+      // 缺少／有敵意的 viewport meta 會默默讓下方所有行動測量失效：
+      // Chromium 退回約 980px 的版面視窗，於是什麼都不「overflow」，
+      // 觸控目標看起來也沒問題。信任行動數字前先檢查。
       const viewportMeta = isMobile ? await page.evaluate(() => {
         const m = document.querySelector('meta[name="viewport" i]');
         if (!m) return { missing: true };
@@ -138,7 +138,7 @@ for (const route of routes) {
         };
       }) : null;
 
-      // Horizontal overflow is invisible in code review and always a real bug.
+      // 橫向 overflow 在程式碼審查中看不見，且永遠是真 bug。
       const overflow = await page.evaluate(() => {
         const de = document.documentElement;
         const scrollW = Math.max(de.scrollWidth, document.body.scrollWidth);
@@ -158,7 +158,7 @@ for (const route of routes) {
         return { scrollWidth: scrollW, clientWidth: de.clientWidth, culprits };
       });
 
-      // Undersized touch targets — WCAG 2.5.5 / Apple HIG 44px.
+      // 過小的觸控目標 — WCAG 2.5.5 / Apple HIG 44px。
       const smallTargets = isMobile ? await page.evaluate(() => {
         const sel = 'a,button,input,select,textarea,[role=button],[role=link],[onclick],[tabindex]';
         const out = [];
@@ -205,11 +205,11 @@ for (const route of routes) {
       });
       const vpBad = viewportMeta && (viewportMeta.missing || viewportMeta.noDeviceWidth || viewportMeta.blocksZoom);
       const bits = [
-        vpBad ? 'VIEWPORT META PROBLEM' : null,
+        vpBad ? 'VIEWPORT META 問題' : null,
         overflow ? `overflow ${overflow.scrollWidth}>${overflow.clientWidth}` : null,
-        smallTargets.length ? `${smallTargets.length} small targets` : null,
-        axeAll[label]?.length ? `${axeAll[label].length} axe rules` : null,
-        consoleErrors.length ? `${consoleErrors.length} console errors` : null,
+        smallTargets.length ? `${smallTargets.length} 個過小目標` : null,
+        axeAll[label]?.length ? `${axeAll[label].length} 條 axe 規則` : null,
+        consoleErrors.length ? `${consoleErrors.length} 個 console 錯誤` : null,
       ].filter(Boolean);
       console.log(`✓ ${label}${bits.length ? '  — ' + bits.join(', ') : ''}`);
     } catch (e) {
@@ -228,60 +228,60 @@ if (axeSource) {
   await writeFile(path.join(outDir, 'axe-report.json'), JSON.stringify(axeAll, null, 2));
 }
 
-// Markdown index so the audit can cite specific artefacts.
+// Markdown 索引，讓稽核能引用具體產物。
 const lines = [
-  `# Capture summary`, ``,
-  `Base URL: ${baseUrl}`,
-  `Routes: ${routes.join(', ')}`,
-  `Widths: ${widths.join(', ')}`,
-  `Screenshots: ${fullPage ? 'full page' : 'viewport'} @2x`, ``,
-  `## Automated signals`, ``,
-  `These are **leads, not findings** — verify each in the screenshots and source before reporting.`, ``,
+  `# 截圖摘要`, ``,
+  `基底 URL：${baseUrl}`,
+  `路由：${routes.join(', ')}`,
+  `寬度：${widths.join(', ')}`,
+  `截圖：${fullPage ? '整頁' : '視窗'} @2x`, ``,
+  `## 自動化訊號`, ``,
+  `這些是**線索，不是發現**——回報前請在截圖與原始碼中逐一驗證。`, ``,
 ];
 
 for (const r of results) {
   lines.push(`### ${r.label}`);
-  if (!r.ok) { lines.push(`- LOAD FAILED: ${r.error}`, ''); continue; }
+  if (!r.ok) { lines.push(`- 載入失敗：${r.error}`, ''); continue; }
   lines.push(`- \`${r.file}\`${r.status && r.status >= 400 ? ` — HTTP ${r.status}` : ''}`);
   const vm = r.viewportMeta;
   if (vm?.missing) {
-    lines.push(`- **No \`<meta name="viewport">\`** — the page renders at a ~${vm.layoutWidth ?? 980}px`,
-      `  layout viewport and is scaled down on phones. **The overflow and touch-target checks`,
-      `  below are therefore not meaningful at this width.** Fix the meta tag, then re-capture.`);
+    lines.push(`- **沒有 \`<meta name="viewport">\`** — 頁面以約 ${vm.layoutWidth ?? 980}px`,
+      `  的版面視窗渲染，並在手機上縮小。**因此下方的 overflow 與觸控目標檢查`,
+      `  在此寬度沒有意義。** 修好 meta 標籤後再重新截圖。`);
   } else if (vm && (vm.noDeviceWidth || vm.blocksZoom)) {
-    lines.push(`- **Viewport meta problem:** \`${vm.content}\``);
-    if (vm.noDeviceWidth) lines.push(`  - missing \`width=device-width\` — mobile layout will be wrong; measurements below are unreliable`);
-    if (vm.blocksZoom) lines.push(`  - blocks pinch-zoom (\`user-scalable=no\` / \`maximum-scale=1\`) — WCAG 1.4.4 failure`);
+    lines.push(`- **Viewport meta 問題：** \`${vm.content}\``);
+    if (vm.noDeviceWidth) lines.push(`  - 缺少 \`width=device-width\` — 行動版面會錯；下方測量不可靠`);
+    if (vm.blocksZoom) lines.push(`  - 阻擋雙指縮放（\`user-scalable=no\` / \`maximum-scale=1\`）— WCAG 1.4.4 失敗`);
   }
   if (r.overflow) {
-    lines.push(`- **Horizontal overflow:** ${r.overflow.scrollWidth}px content in ${r.overflow.clientWidth}px viewport`);
+    lines.push(`- **橫向 overflow：** ${r.overflow.scrollWidth}px 內容塞在 ${r.overflow.clientWidth}px 視窗`);
     for (const c of r.overflow.culprits) {
-      lines.push(`  - \`<${c.tag}${c.cls ? ` class="${c.cls}"` : ''}>\` extends to ${c.right}px`);
+      lines.push(`  - \`<${c.tag}${c.cls ? ` class="${c.cls}"` : ''}>\` 延伸到 ${c.right}px`);
     }
   }
   if (r.smallTargets?.length) {
-    lines.push(`- **Touch targets under 44px:** ${r.smallTargets.length}`);
+    lines.push(`- **觸控目標小於 44px：** ${r.smallTargets.length}`);
     for (const t of r.smallTargets.slice(0, 8)) {
       lines.push(`  - \`<${t.tag}>\` ${t.size}${t.text ? ` — "${t.text}"` : ''}`);
     }
   }
   const ax = axeAll[r.label] || [];
   if (ax.length) {
-    lines.push(`- **axe violations:** ${ax.length} rules, ${ax.reduce((s, v) => s + v.count, 0)} nodes`);
+    lines.push(`- **axe 違規：** ${ax.length} 條規則，${ax.reduce((s, v) => s + v.count, 0)} 個節點`);
     for (const v of ax) lines.push(`  - [${v.impact}] \`${v.id}\` ×${v.count} — ${v.help}`);
   }
   if (r.consoleErrors?.length) {
-    lines.push(`- Console errors: ${r.consoleErrors.length}`);
+    lines.push(`- Console 錯誤：${r.consoleErrors.length}`);
     for (const e of r.consoleErrors.slice(0, 3)) lines.push(`  - ${e.slice(0, 160)}`);
   }
   lines.push('');
 }
 
-lines.push(`## Next step`, ``, `Read the PNGs with the Read tool. Automated checks cannot`,
-  `assess hierarchy, spacing rhythm, copy quality, or whether the flow makes sense.`, '');
+lines.push(`## 下一步`, ``, `用 Read 工具讀取 PNG。自動化檢查無法`,
+  `評估層級、間距節奏、文案品質，或流程是否合理。`, '');
 
 await writeFile(path.join(outDir, 'summary.md'), lines.join('\n'));
 
-console.log(`\n→ ${path.relative(process.cwd(), outDir)}/  (summary.md${axeSource ? ', axe-report.json' : ''}, ${results.filter(r => r.ok).length} PNGs)`);
-if (failures) console.log(`  ${failures} capture(s) failed — see summary.md`);
+console.log(`\n→ ${path.relative(process.cwd(), outDir)}/  (summary.md${axeSource ? ', axe-report.json' : ''}, ${results.filter(r => r.ok).length} 張 PNG)`);
+if (failures) console.log(`  ${failures} 次截圖失敗 — 見 summary.md`);
 process.exit(0);
