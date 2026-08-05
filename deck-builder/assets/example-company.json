@@ -1,0 +1,87 @@
+{
+  "style": "company",
+  "language": "zh-TW",
+  "audience": "internal",
+  "title": "測試簡報",
+  "slides": [
+    {
+      "layout": "Cover",
+      "title": "Genie 2026 設計審核",
+      "subtitle": "無障礙稽核 · 2026-08-04",
+      "notes": "開場"
+    },
+    {
+      "layout": "Agenda",
+      "title": "議程",
+      "bullets": [
+        "問題總覽",
+        "兩個 P0",
+        "修復計畫"
+      ],
+      "notes": "三段"
+    },
+    {
+      "layout": "Content Heading",
+      "title": "灰階文字有 5 個色階不符 WCAG AA",
+      "bullets": [
+        "#b4b4b4 於白底為 1.90:1,AA 要求 4.5:1",
+        "影響全站說明文字與表單提示",
+        "  修法:灰階最淺止於 #767676"
+      ],
+      "notes": "這是 P0-1,色票層級改動約半天。"
+    },
+    {
+      "layout": "Content Heading",
+      "title": "問題分佈",
+      "table": {
+        "headers": [
+          "嚴重度",
+          "數量",
+          "時程"
+        ],
+        "rows": [
+          [
+            "P0",
+            "2",
+            "上線前"
+          ],
+          [
+            "P1",
+            "7",
+            "本週期"
+          ],
+          [
+            "P2",
+            "6",
+            "待辦"
+          ]
+        ]
+      },
+      "notes": "數字來自 UIUX-AUDIT.md"
+    },
+    {
+      "layout": "Content Heading Dark",
+      "title": "兩個 P0 必須在上線前修掉",
+      "bullets": [
+        "灰階對比不符 AA",
+        "設施表格行動版溢出"
+      ],
+      "notes": "深底版:自行加入的文字會翻白,深色字會被驗證器擋下"
+    },
+    {
+      "layout": "Content with image - right",
+      "title": "設施表格在 402px 下溢出",
+      "bullets": [
+        "表格固定 640px",
+        "行動版產生橫向捲動"
+      ],
+      "image": "/tmp/dbtest.png",
+      "notes": "示意圖"
+    },
+    {
+      "layout": "Thank you",
+      "title": "謝謝",
+      "notes": "Q&A"
+    }
+  ]
+}

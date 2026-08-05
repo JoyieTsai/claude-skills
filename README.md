@@ -9,6 +9,7 @@
 | Skill | 用途 |
 |---|---|
 | [`uiux-audit`](uiux-audit/) | 稽核 UI/UX 品質——設計檔或已實作的程式碼——並產出依優先順序排列的發現報告。內含 WCAG 對比計算器，以及 Playwright 截圖 + axe-core 掃描器。 |
+| [`deck-builder`](deck-builder/) | 產出可編輯的 `.pptx` 簡報，真正繼承樣板的 master、版面與品牌色。先問對象與風格，逐頁大綱經確認後才產生，交付前跑對比與溢出驗證。 |
 
 ## 在 Cursor 使用
 
@@ -28,6 +29,7 @@ Cursor 會自動掃描這些位置的 skills：
 git clone <this-repo-url> ~/claude-skills
 mkdir -p ~/.cursor/skills
 ln -s ~/claude-skills/uiux-audit ~/.cursor/skills/uiux-audit
+ln -s ~/claude-skills/deck-builder ~/.cursor/skills/deck-builder
 ```
 
 或只裝進某個專案：
@@ -47,15 +49,16 @@ bash ~/claude-skills/uiux-audit/install.sh
 
 在 **Agent** 對話裡：
 
-1. **手動**：輸入 `/` 後選 `uiux-audit`（或打 `/uiux-audit`）
+1. **手動**：輸入 `/` 後選 skill 名稱（或直接打 `/uiux-audit`、`/deck-builder`）
 2. **自動**：直接用自然語言，Agent 會依 skill 的 `description` 決定是否套用，例如：
    - `審核這個設計`（附上截圖）
    - `audit the login page of this project`
-   - `檢查這個頁面的無障礙`
+   - `幫我把這份報告做成簡報`
+   - `做一份給客戶的提案 PPT`
 
 也可在 Cursor Settings → Rules → Agent Decides 確認 skill 已出現。
 
-詳細用法見 [`uiux-audit/README.md`](uiux-audit/)。
+詳細用法見 [`uiux-audit/README.md`](uiux-audit/) 與 [`deck-builder/README.md`](deck-builder/)。
 
 ## 在 Claude Code 使用
 
@@ -74,10 +77,16 @@ git clone <this-repo-url> ~/claude-skills
 mv ~/claude-skills/* ~/claude-skills/.git* ~/.claude/skills/
 ```
 
-接著執行各 skill 的安裝腳本（僅有依賴的 skill 需要）：
+接著做各 skill 的機器層級設定（只有需要的 skill 才做）：
 
 ```bash
-bash ~/.claude/skills/uiux-audit/install.sh   # 可選：啟用瀏覽器截圖
+# uiux-audit：可選，啟用瀏覽器截圖
+bash ~/.claude/skills/uiux-audit/install.sh
+
+# deck-builder：公司樣板路徑因機器而異，不進版控
+cp ~/.claude/skills/deck-builder/config.example.json \
+   ~/.claude/skills/deck-builder/config.json
+# 再把裡面的 company_template 改成你的樣板實際路徑
 ```
 
 在 Claude Code 裡用 `/skills` 確認已載入。

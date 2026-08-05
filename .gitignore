@@ -10,3 +10,7 @@ node_modules/
 # Lockfile 要提交：鎖定依賴版本，讓每台機器
 # 安裝相同內容（例如 uiux-audit/install.sh 下載的
 # playwright 版本所對應的瀏覽器 build）。
+
+# 各 skill 的本機設定（絕對路徑因機器而異，且不該進共用 repo）。
+# 以 config.example.json 為範本自行建立。
+deck-builder/config.json

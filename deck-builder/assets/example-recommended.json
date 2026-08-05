@@ -1,0 +1,21 @@
+{
+  "style": "recommended",
+  "language": "zh-TW",
+  "audience": "internal",
+  "title": "推薦樣式測試",
+  "slides": [
+    {"layout": "title", "title": "Genie 2026 設計審核", "subtitle": "無障礙與可用性稽核", "notes": "開場"},
+    {"layout": "section", "title": "一、問題總覽", "notes": "分段"},
+    {"layout": "content", "title": "兩個 P0 都與色彩對比有關",
+     "bullets": ["灰階文字 5 個色階不符 AA", "停用按鈕僅 1.90:1", "  兩者皆為 token 層級改動"], "notes": "重點"},
+    {"layout": "two-column", "title": "影響範圍",
+     "columns": [["前端 12 個元件", "設計系統 token"], ["文件需同步更新", "  含 Figma 變數"]], "notes": "兩欄"},
+    {"layout": "table", "title": "問題分佈",
+     "table": {"headers": ["嚴重度","數量","時程"], "rows": [["P0","2","上線前"],["P1","7","本週期"],["P2","6","待辦"]]}, "notes": "表"},
+    {"layout": "quote", "title": "1.90:1", "subtitle": "停用按鈕的實測對比,AA 門檻為 4.5:1", "notes": "單一數字"},
+    {"layout": "image-right", "title": "設施表格溢出", "bullets": ["固定 640px","402px 下橫向捲動"], "image": "/tmp/dbtest.png", "notes": "圖右"},
+    {"layout": "image-full", "title": "行動版現況", "image": "/tmp/dbtest.png", "caption": "來源:Figma node 1002-3230", "notes": "全圖"},
+    {"layout": "closing", "title": "請核准為期兩週的無障礙修復",
+     "bullets": ["負責人:前端小組", "起始日:2026-08-18"], "notes": "要求"}
+  ]
+}
