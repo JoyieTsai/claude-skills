@@ -133,6 +133,46 @@ master 的 `bodyStyle` 依 outline level 混用 `+mn-lt`（theme minor latin →
 以上全部從檔案算出，沒有寫死，所以使用者提供的樣板一樣適用。對任何樣板跑
 `inspect_template.py` 就能看到分組結果。
 
+### `Thank you`[12] 維持原樣
+
+這個版面**不是空框**。它自帶：
+
+- 燒進底圖的 `Thank` / `you` 字樣
+- 一個非 placeholder 的文字框，內容是 `330 Mac Lane Keasbey, NJ 08832 | Tel: +1(732)346-0200 | www.csitech.com`
+- 標題 placeholder 本身預填 `Thank you`
+
+那些是樣板作者的東西，不是某一份簡報的內容，所以 `build_deck.py` 預設**不動這一頁**——只把
+版面自己的標題文字複製到頁面上，其餘都不產生。
+
+⚠️ **PowerPoint 把版面 placeholder 的文字視為提示，不會帶到新頁面上**（python-pptx 回傳空
+的 text frame）。所以「維持原樣」必須是主動把那句話寫上去，否則輸出會只有底圖與聯絡資訊，
+少了「Thank you」。
+
+spec 給了 `title`／`bullets` 等會被忽略並警告。要改就在該頁設 `"keep_closing": false`。
+名稱為 `Thank you`／`Thanks`／`Closing` 的版面同樣受保護，所以使用者提供的樣板也適用。
+
+### `Agenda`[1] 的兩欄
+
+這個版面有**兩個** BODY placeholder，不是一個：
+
+| idx | x | w | 用途 |
+|---|---|---|---|
+| 12 | 1.22 | 5.02 | 段落大標 |
+| 13 | 11.37 | 0.89 | 頁碼（樣板原本是 `02 23 27 32 40`） |
+
+只填左欄，右欄會空著，然後被 `drop_empty_placeholders()` 刪掉——議程就悄悄失去頁碼。所以
+`build_deck.py` 兩欄都填：大標取自各段落分隔頁（`Title`、`Headings_*`）的標題，頁碼取自它們
+實際落在第幾頁，並靠右對齊。全部從簡報自己算出來，所以搬動頁面後議程不會失準。
+
+### 標題只有一行的高度
+
+所有內容版面的標題框都是 **0.71 吋高、32pt**（`Cover` 與 `Thank you` 是 46pt、`Title` 與
+`Headings_*` 是 36pt）。0.71 吋在 32pt 下只夠一行，所以換行的標題會溢出或被 autofit 縮小
+到不像標題。中文大約 20 字就會換行，`Cover` 的 46pt/10.00 吋更早。
+
+`build_deck.py` 與 `verify_deck.py` 都會依該版面**實際的**框寬與字級量測後警告，不是用固定
+字數，因為 46pt/10.00 吋和 32pt/11.50 吋的容納量差很多。
+
 ### 決定每份簡報形狀的那個限制
 
 **只有版面 1、4、9、10、11 有 body 或 object placeholder。** 其餘**八個**只有標題。
@@ -169,5 +209,8 @@ master 的 `bodyStyle` 依 outline level 混用 `+mn-lt`（theme minor latin →
   否則那些 part 會留在 package 裡，輸出會有重複的 zip entry 以及原始媒體。
 - 不要在段落上設字體然後以為它生效了。要對 **run** 設定。
 - 不要在那六個深底版面上放 `#13182c` 的文字。
+- **不要改 `Thank you` 頁**，除非使用者明確要求。那頁的字樣與公司聯絡資訊不屬於任何一份簡報。
+- 不要手寫議程的項目。它是從各段落分隔頁算出來的，手寫的版本在頁面搬動後就會失準。
+- 不要寫會換行的標題。標題框只有一行高。
 - 不要以為樣板自帶的 13 頁是值得照抄的風格指南——那是一份 CSI Technology Group 的公共安全
   簡報，全英文，而且文字相當密。

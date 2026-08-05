@@ -16,6 +16,15 @@
       "subtitle": "無障礙與可用性稽核 · 2026-08-04"
     },
     {
+      "layout": "Agenda",
+      "title": "議程",
+      "notes": "大標與頁碼由後面的段落分隔頁自動產生,不必寫 bullets"
+    },
+    {
+      "layout": "Title",
+      "title": "一、對比問題"
+    },
+    {
       "layout": "Content Heading",
       "title": "灰階文字有 5 個色階不符 WCAG AA",
       "bullets": [
@@ -39,10 +48,12 @@
         "rows": [["P0", "2", "上線前"], ["P1", "7", "本週期"], ["P2", "6", "待辦"]]
       }
     },
-    { "layout": "Thank you", "title": "謝謝" }
+    { "layout": "Thank you" }
   ]
 }
 ```
+
+`Thank you` 不給 `title`——它維持樣板原樣（自帶字樣與公司聯絡資訊）。
 
 ## 最上層
 
@@ -74,6 +85,8 @@
 | `image` | string | 絕對路徑；版面有 PICTURE placeholder 就放進去，否則自行擺放並縮放至適合 |
 | `caption` | string | **推薦風格，僅 `image-full`。** 圖片下方的來源／出處行 |
 | `table` | object | `{headers: [], rows: [[]]}` |
+| `entries` | object[] | **僅 `Agenda` 版面。** `[{"title": …, "page": …}]`，用來取代自動產生的議程 |
+| `keep_closing` | bool | **僅 `Thank you` 版面。** 設 `false` 才會讓這頁照 spec 產生內容；預設維持樣板原樣 |
 | `notes` | string | 講者備註。務必寫——論述就活在這裡 |
 
 `bullets`／`paragraphs`／`table` 每頁只能選一個。`image` 可與其中任一併用。
@@ -95,6 +108,18 @@
   `Content Heading` 相同但仍保持獨立，而在那六個深底版面上，builder 自己加入的文字會翻成
   `#ffffff`（副標 `#e7e6e6`）。絕不要在使用這些版面的頁面上手動指定深色；`verify_deck.py`
   是對照真實背景量對比度，會直接判為錯誤。
+- **`Thank you` 頁維持樣板原樣。** 那個版面自帶「Thank you」字樣與公司地址／電話／網址，
+  所以這頁不從 spec 產生任何內容——只把版面自己的標題文字複製到頁面上（PowerPoint 把版面
+  placeholder 的文字當提示，不會自動帶過來），其餘都不動。給了 `title` 等欄位會被忽略並警告。
+  要改就在該頁設 `"keep_closing": false`。名稱為 `Thank you`／`Thanks`／`Closing` 的版面
+  同樣受保護。
+- **`Agenda` 頁自動列出所有段落大標與頁碼。** 內容取自各段落分隔頁（`Title`、`Headings_*`）
+  的標題與它們實際的頁次，填進版面的兩個 BODY placeholder：左欄大標、右欄頁碼（靠右對齊）。
+  沒有分隔頁時，退回列出除封面與結尾外所有有標題的頁。手寫的 `bullets` 會被忽略並警告；
+  要完全自訂就用 `"entries": [{"title": "一、對比問題", "page": 3}]`。超過 8 項會警告，
+  因為框裝不下。
+- **標題換行會警告。** 依該版面實際的框寬與字級量測（`Cover` 46pt/10.00 吋、內容版面
+  32pt/11.50 吋），約超過 20 個中文字就會換行。標題必須是一句能放在一行的簡潔句子。
 - 在只有標題的版面上使用 `bullets` → 會於 (0.92, 1.60, 11.50, 4.80) 吋加一個文字框。
   同時有圖片時，文字框縮到 6.10 吋寬。
 - BODY placeholder 裝不下內容時會被**放大**，上限是 y = 6.85 吋的頁尾列。

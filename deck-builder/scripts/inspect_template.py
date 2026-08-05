@@ -231,6 +231,55 @@ def main():
             words = words if len(words) <= 44 else words[:41] + "..."
             print(f"    {mark} [{i:2d}] {name:<30} art says: {words or '—'!r}")
 
+    special = []
+    for i, lay in enumerate(layouts):
+        low = lay.name.strip().lower()
+        if low in ("thank you", "thankyou", "thanks", "closing"):
+            extra = [sh.text_frame.text.strip() for sh in lay.shapes
+                     if sh.has_text_frame and sh.text_frame.text.strip()
+                     and not sh.is_placeholder]
+            ph_text = next((p.text_frame.text.strip() for p in lay.placeholders
+                            if p.has_text_frame and p.text_frame.text.strip()), "")
+            special.append(
+                f"[{i:2d}] {lay.name} — kept exactly as drawn. Its own wording "
+                f"{ph_text or '(none)'!r}"
+                + (f" plus {len(extra)} non-placeholder text box(es): "
+                   f"{extra[0][:52]!r}" if extra else "")
+                + '. Set "keep_closing": false on the slide to edit it.')
+        elif low in ("agenda", "contents", "table of contents", "目錄"):
+            bodies = [p for p in lay.placeholders
+                      if "BODY" in str(p.placeholder_format.type)]
+            special.append(
+                f"[{i:2d}] {lay.name} — filled from the deck's own section headings "
+                f"and their page numbers. It has {len(bodies)} body placeholder(s)"
+                + ("; the rightmost takes the page numbers."
+                   if len(bodies) >= 2 else "; headings and pages share one column."))
+    if special:
+        print("\n--- Layouts build_deck.py handles specially " + "-" * 18)
+        for line in special:
+            print(f"  {line}")
+
+    long_titles = []
+    for i, lay in enumerate(layouts):
+        for p in lay.placeholders:
+            if "TITLE" not in str(p.placeholder_format.type):
+                continue
+            szs = re.findall(r'sz="(\d+)"', p._element.xml)
+            sz = int(szs[0]) / 100.0 if szs else 32.0
+            w, h = inches(p.width), inches(p.height)
+            # Chars that fit on one line, latin; CJK counts double.
+            fit = int(8.6 * w * 0.94 * (18.0 / sz))
+            long_titles.append((i, lay.name, sz, w, h, fit))
+            break
+    if long_titles:
+        print("\n--- Headline budget (one line only) " + "-" * 26)
+        print("  A headline must be one line: on the short boxes a second line overflows,")
+        print("  and on the tall ones it fits but stops reading as a heading.")
+        for i, name, sz, w, h, fit in long_titles:
+            room = "1 line" if h < 2 * (sz * 1.45 / 72) else f"{h}in box"
+            print(f"    [{i:2d}] {name:<30} {sz:g}pt in {w}in ({room})  "
+                  f"~{fit} latin / ~{fit // 2} CJK chars")
+
     m = prs.slide_master
     print("\n--- Master placeholders (inches) " + "-" * 29)
     for p in m.placeholders:

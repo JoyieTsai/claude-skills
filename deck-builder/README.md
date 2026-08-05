@@ -75,6 +75,12 @@ ln -s ~/claude-skills/deck-builder .cursor/skills/deck-builder
 
 交付物是你能在 PowerPoint 打開並繼續編輯的檔案。
 
+## 固定規則
+
+- **標題是一句放得下一行的簡潔話**（約 20 個中文字以內）。樣板標題框只有一行高，換行會溢出或被縮小到不像標題。超長會警告。
+- **議程頁自動列出所有段落大標與頁碼**，從各段落分隔頁算出來，所以搬動頁面後不會失準。
+- **`Thank you` 頁維持樣板原樣**——它自帶字樣與公司地址／電話／網址，那是樣板作者的內容。要改就在該頁設 `"keep_closing": false`。
+
 ## 驗證器會檢查什麼
 
 ```bash
@@ -118,3 +124,5 @@ deck-builder/
 - 中文要設 `a:ea`／`a:cs`，英文設 `a:latin`，而且兩者都寫在同一個 run 上，混排才正確。不能靠繼承——公司 master 的 `titleStyle` 把 `a:ea` 設成 Open Sans（純拉丁字體）。
 - 品牌色**不在** `ppt/theme/` 裡。公司樣板的 theme 是原廠 Office 預設（Calibri／`#4472c4`）；真正的色票只存在於 slide 與 layout 的圖形中。
 - 文字排版相同的版面會被併成一個（底圖不算），但底色**明暗**永遠獨立成組——深底版面的文字必須是亮色，否則會直接看不見。
+- 版面 placeholder 裡的文字是「提示」，**不會**被帶到新頁面上。`Thank you` 頁要維持原樣，就得主動把那句話複製過去，否則輸出只有底圖與聯絡資訊。
+- `Agenda` 版面有**兩個** BODY placeholder（大標欄＋頁碼欄）。只填一個，另一個會被 `drop_empty_placeholders()` 刪掉，議程就悄悄少了頁碼。

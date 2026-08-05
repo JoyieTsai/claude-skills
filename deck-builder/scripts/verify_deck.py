@@ -104,6 +104,39 @@ def is_headline(shape):
     return (shape.name or "").startswith("db:headline")
 
 
+def check_headline(i, shape):
+    """A headline has to be one short line.
+
+    The template's title boxes are a single line tall (0.71in at 32pt on the content
+    layouts), so a wrapping headline either overflows or gets autofit-shrunk until it
+    stops reading as a heading. Measured against the box's real width and the run's
+    real size, since Cover at 46pt in 10.00in wraps much sooner than a content title.
+    """
+    tf = shape.text_frame
+    text = tf.text.strip()
+    if not text or "\n" in text:
+        if "\n" in text:
+            warn(f"slide {i}: headline is on {text.count(chr(10)) + 1} lines — a "
+                 "heading should be one short sentence")
+        return
+    size = 32.0
+    for para in tf.paragraphs:
+        for run in para.runs:
+            if run.font.size:
+                size = run.font.size.pt
+                break
+        break
+    w_in = (shape.width or Emu(EMU_IN * 11.5)) / EMU_IN
+    h_in = (shape.height or 0) / EMU_IN
+    lines = est_lines(text, size, w_in * 0.94)
+    if lines > 1:
+        fits = h_in >= lines * (size * 1.45 / 72)
+        tail = ("it fits the box but stops reading as a heading" if fits
+                else "it will overflow or be autofit-shrunk")
+        warn(f"slide {i}: headline runs to {lines} lines at {size:g}pt in "
+             f"{w_in:.2f}in ({len(text)} chars) — {tail}; shorten it: {text[:50]!r}")
+
+
 def check_runs(i, tf, on_fill=None, label=False):
     """Contrast, minimum size and CJK typeface, per run.
 
@@ -254,6 +287,8 @@ def check_slide(i, slide, slide_h_in):
 
         label = is_label(shape)
         check_runs(i, tf, on_fill=shape_fill_hex(shape) or bg, label=label)
+        if is_headline(shape):
+            check_headline(i, shape)
 
         total_lines = 0
         for para in tf.paragraphs:

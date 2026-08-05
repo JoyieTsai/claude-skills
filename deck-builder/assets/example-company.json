@@ -13,12 +13,12 @@
     {
       "layout": "Agenda",
       "title": "議程",
-      "bullets": [
-        "問題總覽",
-        "兩個 P0",
-        "修復計畫"
-      ],
-      "notes": "三段"
+      "notes": "議程由後面各段落分隔頁自動列出,含頁碼,不必手寫 bullets"
+    },
+    {
+      "layout": "Title",
+      "title": "一、對比問題",
+      "notes": "段落分隔頁,議程會列到它"
     },
     {
       "layout": "Content Heading",
@@ -60,13 +60,9 @@
       "notes": "數字來自 UIUX-AUDIT.md"
     },
     {
-      "layout": "Content Heading Dark",
-      "title": "兩個 P0 必須在上線前修掉",
-      "bullets": [
-        "灰階對比不符 AA",
-        "設施表格行動版溢出"
-      ],
-      "notes": "深底版:自行加入的文字會翻白,深色字會被驗證器擋下"
+      "layout": "Title",
+      "title": "二、行動版問題",
+      "notes": "第二個段落分隔頁"
     },
     {
       "layout": "Content with image - right",
@@ -79,9 +75,17 @@
       "notes": "示意圖"
     },
     {
+      "layout": "Content Heading Dark",
+      "title": "兩個 P0 必須在上線前修掉",
+      "bullets": [
+        "灰階對比不符 AA",
+        "設施表格行動版溢出"
+      ],
+      "notes": "深底版:自行加入的文字會翻白,深色字會被驗證器擋下"
+    },
+    {
       "layout": "Thank you",
-      "title": "謝謝",
-      "notes": "Q&A"
+      "notes": "維持樣板原樣:自帶 Thank you 字樣與公司聯絡資訊,不指定 title"
     }
   ]
 }

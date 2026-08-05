@@ -147,14 +147,16 @@ def fill_text_frame(tf, lines, size, color, bullet_char=None,
                   bold=False if sub else bold)
 
 
+def est_lines(text, size_pt, width_in):
+    """Rough wrapped line count. CJK glyphs run ~2x the width of latin."""
+    weight = sum(2 if ord(c) > 0x2E80 else 1 for c in (text or "").strip())
+    cpl = max(8.6 * width_in * (18.0 / max(size_pt, 1)), 1)
+    return max(1, int(weight / cpl + 0.999))
+
+
 def est_height_in(lines, size_pt, width_in):
-    """Rough wrapped height in inches. CJK glyphs run ~2x the width of latin."""
-    total = 0
-    for raw in lines:
-        text = raw.strip()
-        weight = sum(2 if ord(c) > 0x2E80 else 1 for c in text)
-        cpl = max(8.6 * width_in * (18.0 / max(size_pt, 1)), 1)
-        total += max(1, int(weight / cpl + 0.999))
+    """Rough wrapped height in inches."""
+    total = sum(est_lines(raw, size_pt, width_in) for raw in lines)
     return total * (size_pt * 1.45 / 72) + len(lines) * 0.19
 
 
@@ -172,6 +174,50 @@ def grow_to_fit(shape, lines, size_pt, bottom_limit_in=6.85):
         return
     top_in = (shape.top or 0) / EMU_PER_IN
     shape.height = Inches(min(need, max(bottom_limit_in - top_in, have)))
+
+
+def ph_font_size(ph, default=32.0):
+    """The point size a placeholder's first line will actually render at.
+
+    Layouts carry an explicit sz on their title runs (32pt on Content Heading, 46pt on
+    Cover), and that's what governs whether a headline wraps. Falls back to the master's
+    titleStyle size when the layout doesn't say.
+    """
+    sizes = re.findall(r'sz="(\d+)"', ph._element.xml)
+    return int(sizes[0]) / 100.0 if sizes else default
+
+
+def check_headline(idx, text, ph=None, width_in=11.50, size_pt=32.0, height_in=0.0):
+    """A headline must be one short line.
+
+    Measured against the actual box width and font size rather than a fixed character
+    count, because Cover at 46pt in 10.00in holds about half of what Content Heading
+    does at 32pt in 11.50in, and the Headings_* boxes are only 4.90in wide.
+
+    Whether it also *overflows* depends on the box height — the content layouts' title
+    is 0.71in, one line, but Headings_* is 1.64in and physically fits two. The rule is
+    one line either way; the message says which problem it is.
+    """
+    if not text:
+        return
+    if ph is not None:
+        if ph.width:
+            width_in = ph.width / EMU_PER_IN
+        if ph.height:
+            height_in = ph.height / EMU_PER_IN
+        size_pt = ph_font_size(ph, size_pt)
+
+    # Titles are inset from the box edge, so the usable width is slightly narrower.
+    lines = est_lines(text, size_pt, width_in * 0.94)
+    if lines <= 1:
+        return
+
+    fits = height_in >= lines * (size_pt * 1.45 / 72)
+    tail = ("it fits the box, but a heading on two lines stops reading as a heading"
+            if fits else "it will overflow the box or be autofit-shrunk")
+    warn(f"slide {idx}: headline runs to {lines} lines at {size_pt:g}pt in "
+         f"{width_in:.2f}in ({len(text.strip())} chars) — {tail}. Shorten it to one "
+         f"clean sentence: {text.strip()[:60]!r}")
 
 
 def add_notes(slide, text):
@@ -461,6 +507,163 @@ def ph_by_type(slide, *types):
     return None
 
 
+# ---------------------------------------------------------------- agenda
+
+AGENDA_NAMES = ("agenda", "contents", "table of contents", "目錄")
+
+# Layouts that mark the start of a section, so they're what an agenda lists.
+SECTION_LAYOUTS = ("title", "headings_custom photo", "headings_img", "section")
+
+
+def is_agenda_layout(name):
+    return (name or "").strip().lower() in AGENDA_NAMES
+
+
+def agenda_entries(spec_slides, agenda_idx):
+    """Every section heading in the deck, with the page it starts on.
+
+    An agenda that lists only some of the sections is worse than none — the audience
+    uses it to place what they're hearing, so a missing entry reads as a missing
+    section. Derived from the deck itself rather than hand-written, so it can't drift
+    out of sync with the slides.
+
+    Section dividers are preferred. A deck with no dividers falls back to the headline
+    of every content slide, which is what a short deck's agenda should say anyway.
+    """
+    own = spec_slides[agenda_idx - 1]
+    if own.get("entries"):
+        return [(e.get("title", ""), e.get("page")) for e in own["entries"]]
+
+    def collect(pred):
+        out = []
+        for n, s in enumerate(spec_slides, 1):
+            if n == agenda_idx or not s.get("title"):
+                continue
+            if pred(s):
+                out.append((s["title"], n))
+        return out
+
+    entries = collect(
+        lambda s: str(s.get("layout", "")).strip().lower() in SECTION_LAYOUTS)
+    if not entries:
+        entries = collect(
+            lambda s: not is_closing_layout(str(s.get("layout", "")))
+            and str(s.get("layout", "")).strip().lower() != "cover")
+    return entries
+
+
+def fill_agenda(slide, layout, spec_slides, agenda_idx, cjk=None):
+    """Fill both of the Agenda layout's columns: headings on the left, pages on the right.
+
+    The layout ships two BODY placeholders — idx 12 for the labels and idx 13 for the
+    numbers, in a narrow 0.89in column at the right edge. Filling only the first leaves
+    the numbers column empty, and drop_empty_placeholders would then delete it, so the
+    agenda would silently lose its page numbers.
+    """
+    entries = agenda_entries(spec_slides, agenda_idx)
+    if not entries:
+        warn(f"slide {agenda_idx}: agenda has nothing to list — no section dividers and "
+             "no other titled slides")
+        return
+
+    bodies = sorted(
+        (ph for ph in slide.placeholders
+         if "BODY" in str(ph.placeholder_format.type)),
+        key=lambda ph: ph.left or 0)
+
+    labels = [t for t, _ in entries]
+    pages = [("" if p is None else f"{p:02d}") for _, p in entries]
+
+    if len(entries) > 8:
+        warn(f"slide {agenda_idx}: agenda lists {len(entries)} items — the box holds "
+             "about 8; group the sections or split the agenda over two slides")
+
+    if len(bodies) >= 2:
+        fill_text_frame(bodies[0].text_frame, labels, size=18, color=TEXT,
+                        space_after=14)
+        grow_to_fit(bodies[0], labels, 18)
+        # Right-align the numbers so they sit against the slide edge like the template's.
+        fill_text_frame(bodies[-1].text_frame, pages, size=18, color=PRIMARY,
+                        space_after=14)
+        for para in bodies[-1].text_frame.paragraphs:
+            para.alignment = PP_ALIGN.RIGHT
+    else:
+        # A user-supplied agenda layout with one text column: fold the page number in.
+        lines = [f"{t}    {p}" if p else t for t, p in zip(labels, pages)]
+        target = bodies[0] if bodies else None
+        if target is not None:
+            fill_text_frame(target.text_frame, lines, size=18, color=TEXT,
+                            space_after=14)
+            grow_to_fit(target, lines, 18)
+        else:
+            x, y, w, h = BODY_BOX
+            tb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+            fill_text_frame(tb.text_frame, lines, size=18, color=TEXT, space_after=14)
+
+
+# ------------------------------------------------- the closing slide isn't ours to edit
+
+CLOSING_NAMES = ("thank you", "thankyou", "thanks", "closing")
+
+
+def is_closing_layout(name):
+    """True for the template's own sign-off layout.
+
+    Matched on the layout name, so a user-supplied template with a "Thanks" or
+    "Closing" layout gets the same protection.
+    """
+    return (name or "").strip().lower() in CLOSING_NAMES
+
+
+def layout_ph_text(layout, idx_):
+    """The text the layout author put in one of its placeholders.
+
+    PowerPoint treats layout placeholder text as a prompt, so it does NOT carry onto a
+    new slide — python-pptx hands back an empty frame. To reproduce the closing slide
+    as drawn, its wording has to be copied across deliberately.
+    """
+    for ph in layout.placeholders:
+        if ph.placeholder_format.idx == idx_ and ph.has_text_frame:
+            return ph.text_frame.text.strip()
+    return ""
+
+
+def keep_closing_as_is(slide, layout, spec_slide, idx):
+    """Reproduce the closing slide exactly as the template author drew it.
+
+    The company template's `Thank you` layout is not an empty frame: it carries the
+    company address, phone number and website in a non-placeholder textbox, and its
+    title placeholder reads "Thank you". Those details are the template author's, not
+    the deck's, so by default nothing here is generated from the spec — the layout's
+    own title wording is copied over and everything else is left untouched.
+
+    Returns True when the slide was left as drawn. `keep_closing: false` opts back in
+    to normal rendering — that's the "unless told otherwise" half of the rule.
+    """
+    if not is_closing_layout(layout.name):
+        return False
+    if spec_slide.get("keep_closing") is False:
+        return False
+
+    overrides = [k for k in ("title", "subtitle", "bullets", "paragraphs",
+                             "table", "image") if spec_slide.get(k)]
+    if overrides:
+        warn(f"slide {idx}: '{layout.name}' is kept exactly as the template draws it, "
+             f"so {', '.join(overrides)} {'was' if len(overrides) == 1 else 'were'} "
+             "ignored. It already carries its own sign-off wording and the company "
+             'contact details. To edit it anyway, set "keep_closing": false on this '
+             "slide.")
+
+    # The layout's wording has to be written onto the slide explicitly, or the deck
+    # ends up with the background art and contact line but no "Thank you".
+    ph = ph_by_type(slide, "CENTER_TITLE", "TITLE")
+    if ph is not None:
+        text = layout_ph_text(layout, ph.placeholder_format.idx)
+        if text:
+            set_ph_text(ph, text)
+    return True
+
+
 def build_from_template(spec, out):
     tpl = spec.get("template")
     if not tpl:
@@ -490,6 +693,12 @@ def build_from_template(spec, out):
         layout = resolve_layout(prs, s.get("layout"), i, redirect)
         slide = prs.slides.add_slide(layout)
 
+        # The closing slide is the template author's, not the deck's — reproduce it as
+        # drawn and move on, unless the spec explicitly asks to edit it.
+        if keep_closing_as_is(slide, layout, s, i):
+            add_notes(slide, s.get("notes"))
+            continue
+
         # On a dark layout the placeholders already inherit light text from the layout,
         # but anything we add ourselves would default to #13182c and vanish.
         on_dark = layout.name.strip().lower() in dark_layouts
@@ -500,8 +709,10 @@ def build_from_template(spec, out):
         if title:
             ph = ph_by_type(slide, "CENTER_TITLE", "TITLE")
             if ph is not None:
+                check_headline(i, title, ph)
                 set_ph_text(ph, title)   # inherit the master's title styling
             else:
+                check_headline(i, title, width_in=11.50, size_pt=28.0)
                 tb = slide.shapes.add_textbox(Inches(0.92), Inches(0.50),
                                               Inches(11.50), Inches(1.0))
                 style_run(tb.text_frame.paragraphs[0].add_run(), title,
@@ -519,6 +730,18 @@ def build_from_template(spec, out):
                                               Inches(11.50), Inches(0.6))
                 style_run(tb.text_frame.paragraphs[0].add_run(), sub,
                           size=18, color=sub_color)
+
+        # The agenda is derived from the rest of the deck, not authored — it has to list
+        # every section with its page number, and stay in sync when slides move.
+        if is_agenda_layout(layout.name) and not s.get("table"):
+            if s.get("bullets") or s.get("paragraphs"):
+                warn(f"slide {i}: the agenda is built from the deck's own section "
+                     "headings and their page numbers, so its bullets were ignored. "
+                     'Use "entries": [{"title": …, "page": …}] to set it by hand.')
+            fill_agenda(slide, layout, spec["slides"], i)
+            drop_empty_placeholders(slide)
+            add_notes(slide, s.get("notes"))
+            continue
 
         lines = s.get("bullets") or s.get("paragraphs")
         img = s.get("image")
@@ -564,12 +787,14 @@ def build_from_template(spec, out):
 
 # ================================================================ recommended
 
-def r_headline(slide, text, rule=True):
+def r_headline(slide, text, rule=True, idx=None):
     tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_MARGIN_T),
                                   Inches(R_WIDTH), Inches(0.90))
     tf = tb.text_frame
     tf.word_wrap = True
     tb.name = "db:headline"
+    if idx is not None:
+        check_headline(idx, text, width_in=R_WIDTH, size_pt=28.0)
     style_run(tf.paragraphs[0].add_run(), text, size=28, color=TEXT, bold=True)
     if rule:
         from pptx.enum.shapes import MSO_SHAPE
@@ -648,7 +873,7 @@ def build_recommended(spec, out):
             r_slide_number(slide, i)
 
         elif kind == "closing":
-            r_headline(slide, s.get("title", ""))
+            r_headline(slide, s.get("title", ""), idx=i)
             if lines:
                 tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y),
                                               Inches(R_WIDTH), Inches(R_BODY_H))
@@ -657,7 +882,7 @@ def build_recommended(spec, out):
             r_slide_number(slide, i)
 
         else:
-            r_headline(slide, s.get("title", ""))
+            r_headline(slide, s.get("title", ""), idx=i)
 
             if kind == "two-column":
                 cols = s.get("columns") or []
