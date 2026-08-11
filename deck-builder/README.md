@@ -8,6 +8,9 @@
 - **系統推薦** — 保留企業藍，但版面更簡潔密實的自繪風格
 - **使用者提供的樣板** — 先檢視你的 `.pptx`／`.potx`，報告版面與色票後再開始做
 
+兩種用法：交給 Agent 對話（它會問對象與風格、先給你大綱確認），或**自己寫一份 `.md`
+直接 build**（見[直接用 Markdown 做](#直接用-markdown-做)）。
+
 ## 安裝
 
 此 skill 位於 `claude-skills` repo——完整 clone 步驟見該 repo 的 [README](../README.md)。

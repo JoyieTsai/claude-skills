@@ -9,7 +9,7 @@
 | Skill | 用途 |
 |---|---|
 | [`uiux-audit`](uiux-audit/) | 稽核 UI/UX 品質——設計檔或已實作的程式碼——並產出依優先順序排列的發現報告。內含 WCAG 對比計算器，以及 Playwright 截圖 + axe-core 掃描器。 |
-| [`deck-builder`](deck-builder/) | 產出可編輯的 `.pptx` 簡報，真正繼承樣板的 master、版面與品牌色。先問對象與風格，逐頁大綱經確認後才產生，交付前跑對比與溢出驗證。 |
+| [`deck-builder`](deck-builder/) | 產出可編輯的 `.pptx` 簡報，真正繼承樣板的 master、版面與品牌色。**公司樣板已內建，clone 完不必設定就能用**，也可以直接餵一份 `.md` 大綱給它做簡報。先問對象與風格，逐頁大綱經確認後才產生，交付前跑對比與溢出驗證。 |
 
 ## 在 Cursor 使用
 
