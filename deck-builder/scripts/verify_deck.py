@@ -34,6 +34,16 @@ EMU_IN = 914400
 BRAND = {"0d63ba", "0b539d", "13182c", "e7e6e6", "b4b4b4", "3f3f3f",
          "ffffff", "000000", "fcfcfc", "ff737f", "5a5f6e", "d8d8d8", "f4f6f9"}
 
+# The chart palette, validated with the dataviz validator against this template's
+# surfaces — see references/charts.md. Kept separate from BRAND because these are
+# data-encoding colours, legitimate inside a chart and nowhere else.
+CHART_COLORS = {"0d63ba", "eb6834", "12a06d", "c74d7c", "4a3aa7", "b87c00",
+                "008300", "e34948",                              # categorical
+                "86b6ef", "6da7ec", "3987e5", "0a4a8c",           # sequential
+                "b3401c", "e8825c",                               # diverging arms
+                "8c93a3",                                         # de-emphasis
+                "d8d8d8", "5a5f6e", "13182c", "ffffff", "4a86c8", "e7e6e6"}
+
 # Segoe UI for latin, Microsoft JhengHei (微軟正黑體) for Chinese.
 # The template's own slides also use Lato/Verdana/Open Sans, so those are accepted
 # without complaint on latin text — but Chinese must not land in a latin-only face.
@@ -249,14 +259,70 @@ def slide_bg_hex(slide):
     return "ffffff"
 
 
+def check_chart(i, shape, bg):
+    """Check a native chart: its colours, its series count, and its CJK typefaces.
+
+    A chart is a separate part with its own text properties, so the run-level font rules
+    that apply to slide text apply again here — and python-pptx's font.name writes only
+    a:latin, so a missing a:ea shows up as one line of Chinese in a fallback face.
+
+    Off-palette series colours matter more in a chart than elsewhere: the palette is
+    validated for colour-vision separation as a *set*, so substituting one hue breaks a
+    guarantee about the others.
+    """
+    chart = shape.chart
+    xml = chart._chartSpace.xml
+
+    for hexv in {h.lower() for h in
+                 re.findall(r'<a:srgbClr val="([0-9A-Fa-f]{6})"', xml)}:
+        if hexv not in CHART_COLORS:
+            warn(f"slide {i}: chart uses #{hexv}, which is not in the validated chart "
+                 "palette — the palette's colour-vision separation was measured as a "
+                 "set, so one substituted hue invalidates it for the others")
+
+    n_series = len(chart.series)
+    if n_series > 8:
+        err(f"slide {i}: chart has {n_series} series but there are only 8 fixed "
+            "categorical slots — hues are never cycled; fold the tail into 「其他」")
+
+    if not chart.has_legend and n_series >= 2:
+        warn(f"slide {i}: chart has {n_series} series and no legend — identity would "
+             "be colour-alone, and a .pptx has no hover to fall back on")
+    if chart.has_legend and n_series < 2:
+        warn(f"slide {i}: a one-series chart with a legend — the headline already "
+             "names it")
+
+    # Chinese anywhere in the chart (categories, series names, axis titles) needs a:ea.
+    if re.search(r'[一-鿿]', "".join(re.findall(r"<c:v>([^<]*)</c:v>", xml))):
+        for defRPr in chart._chartSpace.iter(qn("a:defRPr")):
+            ea = defRPr.find(qn("a:ea"))
+            if ea is None or ea.get("typeface") not in CJK_OK:
+                warn(f"slide {i}: chart has Chinese text but its a:ea typeface is "
+                     f"{'missing' if ea is None else repr(ea.get('typeface'))} — it "
+                     "will render in a fallback font")
+                break
+
+    dark_bg = luminance(bg) < 0.18
+    if dark_bg:
+        err(f"slide {i}: chart on a dark background (#{bg}) — the palette is validated "
+            "against white; on the navy every series measures about 2:1, so the "
+            "colours stop working as distinguishable marks. Move it to a light layout.")
+
+
 def check_slide(i, slide, slide_h_in):
     bg = slide_bg_hex(slide)
     texts = []
     placeholder_empty = []
     has_title = False
     has_table = False
+    has_chart = False
 
     for shape in slide.shapes:
+        if getattr(shape, "has_chart", False) and shape.has_chart:
+            has_chart = True
+            check_chart(i, shape, bg)
+            continue
+
         if shape.is_placeholder:
             t = str(shape.placeholder_format.type)
             if is_title_ph(t):
@@ -332,7 +398,7 @@ def check_slide(i, slide, slide_h_in):
              "it shows 'Click to add text' in edit view")
 
     bullets = sum(1 for line in joined.split("\n") if line.strip())
-    if bullets > 10 and not has_table:
+    if bullets > 10 and not has_table and not has_chart:
         warn(f"slide {i}: ~{bullets} text lines — dense; consider splitting")
 
     notes = ""
@@ -343,7 +409,8 @@ def check_slide(i, slide, slide_h_in):
     # consumes talk time. Covers, section dividers and the closing slide don't.
     body_shapes = 0
     for sh in slide.shapes:
-        if sh.has_table or sh.shape_type == MSO_SHAPE_TYPE.PICTURE:
+        if (sh.has_table or sh.shape_type == MSO_SHAPE_TYPE.PICTURE
+                or (getattr(sh, "has_chart", False) and sh.has_chart)):
             body_shapes += 1
             continue
         if not (sh.has_text_frame and sh.text_frame.text.strip()):

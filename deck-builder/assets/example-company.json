@@ -60,6 +60,25 @@
       "notes": "數字來自 UIUX-AUDIT.md"
     },
     {
+      "layout": "Content Heading",
+      "title": "P1 是最大的一群，但 P0 決定能不能上線",
+      "bullets": [
+        "P0 只有 2 條，卻是上線的關卡",
+        "P1 有 7 條，佔了工作量的一半"
+      ],
+      "chart": {
+        "form": "column",
+        "categories": ["P0", "P1", "P2", "P3"],
+        "series": [
+          {"name": "問題數", "values": [2, 7, 6, 3]}
+        ],
+        "colors": "emphasis",
+        "emphasize": 0,
+        "label_points": [0, 1, 2, 3]
+      },
+      "notes": "原生可編輯的圖表——在 PowerPoint 點下去就能改數字。強調 P0 那一根，因為它是決策點,其他三根是背景。左邊文字講「所以呢」,圖表是證據,這是圖表唯一能與要點同頁的情況。"
+    },
+    {
       "layout": "Title",
       "title": "二、行動版問題",
       "notes": "第二個段落分隔頁"

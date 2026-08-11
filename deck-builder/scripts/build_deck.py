@@ -32,6 +32,9 @@ try:
 except ImportError:
     sys.exit("python-pptx is not installed. Run: pip3 install python-pptx")
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import charts   # noqa: E402  -- native pptx charts; see references/charts.md
+
 
 # ---------------------------------------------------------------- palette
 
@@ -245,12 +248,28 @@ def check_content(idx, spec):
                  "move it to speaker notes")
     if "[待補" in json.dumps(spec, ensure_ascii=False) or "[TODO" in json.dumps(spec):
         warn(f"slide {idx}: contains an unresolved placeholder marker")
-    n = sum(1 for k in ("bullets", "paragraphs", "table") if spec.get(k))
-    if n > 1:
-        die(f"slide {idx}: use only one of bullets / paragraphs / table")
+    # A chart beside bullets is the one legitimate pairing: the text states the "so
+    # what" that a chart alone can't, and the chart is the evidence for it. The chart
+    # takes the right half, the text the left. Every other combination is two ideas on
+    # one slide.
+    keys = ("bullets", "paragraphs", "table", "chart")
+    n = sum(1 for k in keys if spec.get(k))
+    text_plus_chart = (n == 2 and spec.get("chart") and not spec.get("table")
+                       and not spec.get("image"))
+    if n > 1 and not text_plus_chart:
+        die(f"slide {idx}: use only one of {' / '.join(keys)} — a chart may share a "
+            "slide with bullets, but nothing else may")
     img = spec.get("image")
     if img and not os.path.isfile(img):
         die(f"slide {idx}: image not found: {img}")
+    if spec.get("chart"):
+        if img:
+            die(f"slide {idx}: a chart and an image compete for the same body area — "
+                "use one")
+        try:
+            charts.check_chart(idx, spec["chart"], warn)
+        except ValueError as e:
+            die(str(e) if str(e).startswith("slide") else f"slide {idx}: {e}")
 
 
 # ---------------------------------------------------------------- tables
@@ -294,6 +313,25 @@ def add_table(slide, table_spec, x, y, w, h, header_fill=PRIMARY,
             style_run(tf.paragraphs[0].add_run(), str(text),
                       size=size, color=TEXT, bold=False)
     return shape
+
+
+def add_chart_to_slide(slide, chart_spec, on_dark, idx,
+                       box=(0.92, 1.70, 11.50, 4.75)):
+    """Place a native chart in the body area.
+
+    Charts get the same box tables do, minus a little height for the legend that sits
+    under the plot. Fonts are passed through so a chart's Chinese category names use
+    微軟正黑體 like the rest of the deck — python-pptx would otherwise write only
+    a:latin on the chart's text properties.
+    """
+    x, y, w, h = box
+    if chart_spec.get("box"):
+        x, y, w, h = chart_spec["box"]
+    try:
+        return charts.add_chart(slide, chart_spec, x, y, w, h, on_dark=on_dark,
+                                latin=LATIN_FONT, cjk=CJK_FONT, warn=warn, idx=idx)
+    except ValueError as e:
+        die(str(e) if str(e).startswith("slide") else f"slide {idx}: {e}")
 
 
 def place_image(slide, path, x, y, max_w, max_h):
@@ -773,10 +811,17 @@ def build_from_template(spec, out):
                 fill_text_frame(body.text_frame, lines, size=20, color=body_color,
                                 bullet_char=bullet, space_after=14)
                 grow_to_fit(body, lines, 20)
+                if s.get("chart"):
+                    # The layout's BODY spans the full width, which is where the chart
+                    # goes. Writing one dimension on a placeholder that inherits its
+                    # geometry materialises an <a:xfrm> and zeroes the rest, so all
+                    # four are restated.
+                    body.left, body.top = Inches(0.92), body.top
+                    body.width, body.height = Inches(5.80), body.height
             else:
                 # ~20 of the 25 company layouts are title-only; add our own box.
                 x, y, w, h = BODY_BOX
-                if img:
+                if img or s.get("chart"):
                     w = 6.10
                 tb = slide.shapes.add_textbox(Inches(x), Inches(y),
                                               Inches(w), Inches(h))
@@ -786,6 +831,19 @@ def build_from_template(spec, out):
         if s.get("table"):
             add_table(slide, s["table"], 0.92, 1.70, 11.50,
                       min(0.45 * (len(s["table"].get("rows", [])) + 1), 4.9))
+
+        if s.get("chart"):
+            # With bullets beside it the chart takes the right half, matching how an
+            # image shares the slide — the text carries the "so what", the chart the
+            # evidence.
+            box = ((7.10, 1.70, 5.30, 4.75) if lines else (0.92, 1.70, 11.50, 4.75))
+            if on_dark:
+                warn(f"slide {i}: a chart on the dark layout '{layout.name}' — the "
+                     "palette is validated against white, and on the navy background "
+                     "every series falls under 3:1, so the colours stop being "
+                     "distinguishable marks. Move the chart to 'Content Heading' and "
+                     "leave the dark layout for text.")
+            add_chart_to_slide(slide, s["chart"], on_dark, i, box=box)
 
         if img:
             pic_ph = ph_by_type(slide, "PICTURE")
@@ -919,6 +977,25 @@ def build_recommended(spec, out):
                 add_table(slide, s["table"], R_MARGIN_L, R_BODY_Y, R_WIDTH,
                           min(0.42 * nrows, R_BODY_H))
 
+            elif kind == "chart":
+                if not s.get("chart"):
+                    die(f"slide {i}: layout 'chart' needs a chart object")
+                add_chart_to_slide(slide, s["chart"], False, i,
+                                   box=(R_MARGIN_L, R_BODY_Y, R_WIDTH,
+                                        R_BODY_H - 0.15))
+
+            elif kind == "chart-right":
+                if not s.get("chart"):
+                    die(f"slide {i}: layout 'chart-right' needs a chart object")
+                if lines:
+                    tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y),
+                                                  Inches(R_COL_W), Inches(R_BODY_H))
+                    fill_text_frame(tb.text_frame, lines, size=18, color=TEXT,
+                                    bullet_char=bullet, sub_color=TEXT_2)
+                add_chart_to_slide(slide, s["chart"], False, i,
+                                   box=(R_COL2_X, R_BODY_Y, R_COL_W,
+                                        R_BODY_H - 0.15))
+
             elif kind == "image-full":
                 if not s.get("image"):
                     die(f"slide {i}: layout 'image-full' needs an image")
@@ -951,6 +1028,10 @@ def build_recommended(spec, out):
                                                   Inches(R_WIDTH), Inches(R_BODY_H))
                     fill_text_frame(tb.text_frame, lines, size=18, color=TEXT,
                                     bullet_char=bullet, sub_color=TEXT_2)
+                if s.get("chart"):
+                    add_chart_to_slide(slide, s["chart"], False, i,
+                                       box=(R_MARGIN_L, R_BODY_Y, R_WIDTH,
+                                            R_BODY_H - 0.15))
                 if s.get("image"):
                     place_image(slide, s["image"], 3.50, R_BODY_Y + 0.20,
                                6.33, R_BODY_H - 0.40)

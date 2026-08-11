@@ -75,6 +75,28 @@ ln -s ~/claude-skills/deck-builder .cursor/skills/deck-builder
 
 交付物是你能在 PowerPoint 打開並繼續編輯的檔案。
 
+## 圖表
+
+圖表是**原生的 `c:chart` 部件**，資料存在內嵌的 Excel 工作表裡——在 PowerPoint 點下去就能
+改數字、換圖表類型。不是圖片。
+
+色票不是挑好看的，是用 [`dataviz`](https://code.claude.com/docs/en/skills) skill 的驗證器
+針對這個樣板的實際底色實測出來的：8 個固定類別槽位，色相永不循環，最差相鄰色對在
+protanopia 模擬下 ΔE 8.4、正常視覺 18.3，全部通過白底 3:1。
+
+會被擋下來的反模式：超過 8 個數列、少於 3 片的圓餅、一根柱子的長條圖、雙 Y 軸（結構上不
+可能）、每個點都標數字、超過 3 個數列的散佈圖（那裡每點都和其他所有點比，只有前 3 槽過得了
+all-pairs）。
+
+**深底版面不放圖表。** 這是量出來的，不是偏好：在 `Content Heading Dark` 的導覽藍
+`#0b539d` 上，dataviz 的深色步階 8 個全部低於 3:1，亮色步階則超出深色模式的明度帶。
+深底是給一句重話用的。
+
+兩件 pptx 做不到、所以明說而不默默丟掉的事：**沒有圓角資料端**（DrawingML 的圖表數列沒有
+圓角可設）、**沒有 hover 層**（所以身分改為靠圖例與選擇性直接標註承擔）。
+
+完整的形式與色票選用準則見 `references/charts.md`。
+
 ## 固定規則
 
 - **標題是一句放得下一行的簡潔話**（約 20 個中文字以內）。樣板標題框只有一行高，換行會溢出或被縮小到不像標題。超長會警告。
@@ -105,10 +127,12 @@ deck-builder/
 │   ├── company-template.md      # 公司樣板已驗證規格：色票、字體、13 個版面
 │   ├── recommended-style.md     # 系統推薦風格的色票、字級、格線、版面
 │   ├── spec-format.md           # build_deck.py 讀的 JSON 格式
+│   ├── charts.md                # 圖表形式與色票的選用準則（實測數據）
 │   └── narrative.md             # 敘事結構、頁數、大綱範本
 ├── scripts/
 │   ├── inspect_template.py      # 讀出任何樣板的版面、色票、字體、重複版面
 │   ├── build_deck.py            # spec JSON → .pptx
+│   ├── charts.py                # 原生可編輯圖表 ＋ 已驗證色票
 │   └── verify_deck.py           # 交付前檢查
 └── assets/
     ├── example-company.json     # 可直接跑的公司樣板範例
@@ -127,3 +151,6 @@ deck-builder/
 - 版面 placeholder 裡的文字是「提示」，**不會**被帶到新頁面上。`Thank you` 頁要維持原樣，就得主動把那句話複製過去，否則輸出只有底圖與聯絡資訊。
 - `Agenda` 版面有**兩個** BODY placeholder（大標欄＋頁碼欄）。只填一個，另一個會被 `drop_empty_placeholders()` 刪掉，議程就悄悄少了頁碼。
 - placeholder 型別**不能用子字串比對**。python-pptx 把型別印成 `SUBTITLE (4)`，字串裡含有 `TITLE`——所以 `"TITLE" in t` 會把封面副標當成標題。`build_deck.py` 用 `ph_by_type()` 精確比對列舉名稱，`verify_deck.py` 用 `is_title_ph()`；否則副標會被拿去檢查「標題只有一行」的規則，而標題也可能被寫進副標框。
+- **圖表部件裡的字體要再設一次。** `font.name` 一樣只寫 `a:latin`，而圖表是獨立的 part、有自己的文字屬性（軸標籤、圖例、資料標註各有一個 `defRPr`），所以 `charts.py` 的 `_apply_fonts()` 走訪整個 `chartSpace` 補上 `a:ea`／`a:cs`。而且 `a:defRPr` 的子元素**有 schema 順序**（solidFill?, latin, ea, cs），順序錯了 PowerPoint 會要求修復檔案——所以每個元素是插在實際存在的前一個元素之後，不是直接 append。
+- **圖表沒有圓角可設。** DrawingML 的數列沒有 corner radius，所以 dataviz 規格裡的「4px 圓角資料端」在 pptx 做不到。這件事寫在 `charts.md` 裡明說，而不是默默照做失敗——畫一個圓角矩形就不是圖表了。
+- **改色票就要重跑驗證器。** `CATEGORICAL` 的色盲區辨是當成**一組**量的：換掉其中一個色相，會破壞它對其他色相的保證。改完要跑 dataviz 的 `validate_palette.js`，並同步更新 `verify_deck.py` 的 `CHART_COLORS` 與 `charts.md` 裡的實測數字。

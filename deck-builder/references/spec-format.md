@@ -85,16 +85,19 @@
 | `image` | string | 絕對路徑；版面有 PICTURE placeholder 就放進去，否則自行擺放並縮放至適合 |
 | `caption` | string | **推薦風格，僅 `image-full`。** 圖片下方的來源／出處行 |
 | `table` | object | `{headers: [], rows: [[]]}` |
+| `chart` | object | **原生、可在 PowerPoint 編輯的圖表**（不是圖片）。欄位與選用準則見 `charts.md` |
 | `entries` | object[] | **僅 `Agenda` 版面。** `[{"title": …, "page": …}]`，用來取代自動產生的議程 |
 | `keep_closing` | bool | **僅 `Thank you` 版面。** 設 `false` 才會讓這頁照 spec 產生內容；預設維持樣板原樣 |
 | `notes` | string | 講者備註。務必寫——論述就活在這裡 |
 
-`bullets`／`paragraphs`／`table` 每頁只能選一個。`image` 可與其中任一併用。
+`bullets`／`paragraphs`／`table`／`chart` 每頁只能選一個，**唯一例外是 `chart` 可以和
+`bullets`／`paragraphs` 同頁**——文字講「所以呢」，圖表是證據，自動排成左文右圖。
+`image` 可與文字類欄位併用，但不能和 `chart` 併用（兩者搶同一塊版面）。
 
 ## `style: "recommended"` 的版面名稱
 
 `title`、`section`、`content`、`two-column`、`image-right`、`image-full`、`table`、
-`quote`、`closing`。未知名稱會以 `content` 呈現並警告（與樣板風格不同——在樣板風格下，
+`chart`、`chart-right`、`quote`、`closing`。未知名稱會以 `content` 呈現並警告（與樣板風格不同——在樣板風格下，
 未知版面是硬錯誤，因為在那裡猜錯會無聲套上錯誤的 master 樣式）。
 
 ## 腳本會強制執行的規則
@@ -126,7 +129,12 @@
   `Content with image - right` 的 BODY 只有 0.48 吋高（圖說欄位），否則三條要點會無聲溢出。
 - 沒填內容的 placeholder 會被**刪除**，這樣使用者打開來編輯時不會看到「Click to add text」。
 - 超過 8 條要點，或任一條超過約 120 字元 → 警告，不是錯誤。應該回頭修大綱，而不是讓它溢出。
-- 圖片路徑不存在、同一頁同時有 `bullets`+`table`、或 `--out` 等於樣板本身 → 硬錯誤。
+- 圖片路徑不存在、同一頁同時有 `bullets`+`table`、`chart`+`table`、`chart`+`image`、
+  或 `--out` 等於樣板本身 → 硬錯誤。
+- **圖表是原生 `c:chart` 部件**，資料存在內嵌工作表裡，使用者點下去就能改數字、換類型。
+  形式與色票的選用準則、以及 pptx 做不到的兩件事（圓角資料端、hover 層），見 `charts.md`。
+  硬錯誤：數列超過 8 個（色相永不循環）、少於 3 片的圓餅。深底版面放圖表在 build 階段警告、
+  在 `verify_deck.py` 是錯誤——那個導覽藍上所有色票都低於 3:1，實測過。
 - `--out` 已存在 → 硬錯誤，除非加 `--force`。
 - 文字以 **run** 寫入並設好 `a:ea`／`a:cs`，中文才會正確呈現。
 - `[待補: …]`／`[TODO…]` 標記在 build 階段只警告，但在 `verify_deck.py` 是**錯誤**——
