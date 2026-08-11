@@ -126,3 +126,4 @@ deck-builder/
 - 文字排版相同的版面會被併成一個（底圖不算），但底色**明暗**永遠獨立成組——深底版面的文字必須是亮色，否則會直接看不見。
 - 版面 placeholder 裡的文字是「提示」，**不會**被帶到新頁面上。`Thank you` 頁要維持原樣，就得主動把那句話複製過去，否則輸出只有底圖與聯絡資訊。
 - `Agenda` 版面有**兩個** BODY placeholder（大標欄＋頁碼欄）。只填一個，另一個會被 `drop_empty_placeholders()` 刪掉，議程就悄悄少了頁碼。
+- placeholder 型別**不能用子字串比對**。python-pptx 把型別印成 `SUBTITLE (4)`，字串裡含有 `TITLE`——所以 `"TITLE" in t` 會把封面副標當成標題。`build_deck.py` 用 `ph_by_type()` 精確比對列舉名稱，`verify_deck.py` 用 `is_title_ph()`；否則副標會被拿去檢查「標題只有一行」的規則，而標題也可能被寫進副標框。

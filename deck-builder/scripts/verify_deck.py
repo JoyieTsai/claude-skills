@@ -97,9 +97,19 @@ def is_label(shape):
     return h_in <= 0.42 and len(text) <= 60 and "\n" not in text
 
 
+def is_title_ph(t):
+    """True for TITLE / CENTER_TITLE, but not SUBTITLE.
+
+    python-pptx renders the enum as 'SUBTITLE (4)', which contains the substring
+    'TITLE' — so a plain `"TITLE" in t` counts a Cover's subtitle as the headline and
+    reports the one-line rule against a box that is meant to hold a longer line.
+    """
+    return "TITLE" in t and "SUBTITLE" not in t
+
+
 def is_headline(shape):
     """A slide's heading, whether a placeholder or a drawn textbox."""
-    if shape.is_placeholder and "TITLE" in str(shape.placeholder_format.type):
+    if shape.is_placeholder and is_title_ph(str(shape.placeholder_format.type)):
         return True
     return (shape.name or "").startswith("db:headline")
 
@@ -249,7 +259,7 @@ def check_slide(i, slide, slide_h_in):
     for shape in slide.shapes:
         if shape.is_placeholder:
             t = str(shape.placeholder_format.type)
-            if "TITLE" in t:
+            if is_title_ph(t):
                 has_title = bool(
                     shape.has_text_frame and shape.text_frame.text.strip())
             if shape.has_text_frame and not shape.text_frame.text.strip():
@@ -314,7 +324,7 @@ def check_slide(i, slide, slide_h_in):
         err(f"slide {i}: unresolved placeholder {m}")
 
     if not has_title and slide.shapes and any(
-            s.is_placeholder and "TITLE" in str(s.placeholder_format.type)
+            s.is_placeholder and is_title_ph(str(s.placeholder_format.type))
             for s in slide.shapes):
         warn(f"slide {i}: title placeholder is empty")
     for t in placeholder_empty:

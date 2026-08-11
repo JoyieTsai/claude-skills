@@ -167,12 +167,16 @@ def grow_to_fit(shape, lines, size_pt, bottom_limit_in=6.85):
     Filling one with three bullets overflows silently, so grow it — bounded by the
     footer row — rather than let text spill off the slide.
     """
-    w_in = (shape.width or Inches(11.5)) / EMU_PER_IN
+    left, top, width = shape.left, shape.top, shape.width
+    w_in = (width or Inches(11.5)) / EMU_PER_IN
     need = est_height_in(lines, size_pt, w_in)
     have = (shape.height or 0) / EMU_PER_IN
     if need <= have:
         return
-    top_in = (shape.top or 0) / EMU_PER_IN
+    top_in = (top or 0) / EMU_PER_IN
+    # Writing any one dimension on a placeholder that inherits its geometry
+    # materialises an <a:xfrm> and zeroes the rest, so restate all four.
+    shape.left, shape.top, shape.width = left, top, width
     shape.height = Inches(min(need, max(bottom_limit_in - top_in, have)))
 
 
@@ -497,13 +501,26 @@ def drop_empty_placeholders(slide):
 
 
 def ph_by_type(slide, *types):
+    """The first placeholder whose type is one of `types`, in the order given.
+
+    Matched on the enum name alone, not as a substring: python-pptx renders the type as
+    'SUBTITLE (4)', so asking for "TITLE" by substring also matches a subtitle — and on a
+    layout whose subtitle happens to come first in the placeholder list, the headline
+    would land in the subtitle box.
+
+    Ordered by `types`, not by placeholder order, so ph_by_type(s, "CENTER_TITLE",
+    "TITLE") prefers a centre title when the layout has both.
+    """
+    found = {}
     for ph in slide.placeholders:
         try:
-            t = str(ph.placeholder_format.type)
+            name = str(ph.placeholder_format.type).split(" (")[0]
         except Exception:
             continue
-        if any(name in t for name in types):
-            return ph
+        found.setdefault(name, ph)
+    for want in types:
+        if want in found:
+            return found[want]
     return None
 
 
