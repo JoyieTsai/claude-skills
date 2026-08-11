@@ -34,6 +34,7 @@ except ImportError:
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import charts   # noqa: E402  -- native pptx charts; see references/charts.md
+import md_to_spec   # noqa: E402  -- lets --spec take a .md outline directly
 
 
 # ---------------------------------------------------------------- palette
@@ -1066,6 +1067,7 @@ def finish(prs, spec, out):
 
 
 CONFIG_NAME = "config.json"
+BUNDLED_TEMPLATE = os.path.join("assets", "company-template.pptx")
 
 
 def skill_dir():
@@ -1073,11 +1075,12 @@ def skill_dir():
 
 
 def load_config():
-    """Machine-local settings, kept out of the repo.
+    """Machine-local override for the bundled template.
 
     Looks for DECK_BUILDER_TEMPLATE in the environment, then <skill>/config.json.
-    The company template lives in the user's Documents, which is neither portable nor
-    something a shared repo should record — so the path is configured, not committed.
+    Neither is required — the skill ships the company template in `assets/`, so a fresh
+    clone builds with no setup. These exist for the cases the bundled copy can't cover:
+    a newer revision of the template, or a different one entirely.
     """
     tpl = os.environ.get("DECK_BUILDER_TEMPLATE")
     if tpl:
@@ -1093,35 +1096,53 @@ def load_config():
 
 
 def resolve_template(spec):
-    """Fill in spec['template'] from config when the spec doesn't name one.
+    """Fill in spec['template'] when the spec doesn't name one.
 
-    Lets a spec say `"style": "company"` and stay portable. An explicit template in the
-    spec always wins, so `custom` decks and one-off templates are unaffected.
+    Order: spec's own `template` → DECK_BUILDER_TEMPLATE → config.json → the copy
+    bundled in `assets/`. An explicit template in the spec always wins, so `custom`
+    decks and one-off templates are unaffected. The bundled fallback is last, so anyone
+    who already configured a path keeps getting their own file.
     """
     if spec.get("template") or (spec.get("style") or "company").lower() == "recommended":
         return
-    cfg = load_config()
-    tpl = cfg.get("company_template")
-    if not tpl:
-        die("no company template configured. Either set \"template\" in the spec, or "
-            f"create {os.path.join(skill_dir(), CONFIG_NAME)} with\n"
-            '  {"company_template": "/path/to/Template.pptx"}\n'
-            "or set DECK_BUILDER_TEMPLATE in the environment. "
-            "See references/company-template.md.")
-    spec["template"] = os.path.expanduser(tpl)
+    tpl = load_config().get("company_template")
+    if tpl:
+        tpl = os.path.expanduser(tpl)
+        if not os.path.isfile(tpl):
+            die(f"configured company template not found: {tpl}\n"
+                "Fix the path in config.json / DECK_BUILDER_TEMPLATE, or remove the "
+                "setting to fall back to the bundled "
+                f"{BUNDLED_TEMPLATE}.")
+        spec["template"] = tpl
+        return
+    bundled = os.path.join(skill_dir(), BUNDLED_TEMPLATE)
+    if not os.path.isfile(bundled):
+        die(f"the bundled company template is missing ({bundled}). Re-clone the skill, "
+            "or set \"template\" in the spec / DECK_BUILDER_TEMPLATE to your own "
+            ".pptx. See references/company-template.md.")
+    spec["template"] = bundled
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--spec", required=True, help="path to the deck spec JSON")
+    ap.add_argument("--spec", required=True,
+                    help="path to the deck source: a spec .json, or a .md outline")
     ap.add_argument("--out", required=True, help="output .pptx path")
     ap.add_argument("--force", action="store_true",
                     help="overwrite --out if it exists")
     args = ap.parse_args()
 
-    with open(args.spec, encoding="utf-8") as fh:
-        spec = json.load(fh)
+    # A .md source is the approved outline itself, so it can be built without being
+    # transcribed into JSON first — transcription is where an outline and its deck drift.
+    if os.path.splitext(args.spec)[1].lower() in (".md", ".markdown"):
+        try:
+            spec = md_to_spec.load(args.spec)
+        except md_to_spec.MdError as e:
+            die(f"{os.path.basename(args.spec)}: {e}")
+    else:
+        with open(args.spec, encoding="utf-8") as fh:
+            spec = json.load(fh)
 
     resolve_template(spec)
     if not spec.get("slides"):

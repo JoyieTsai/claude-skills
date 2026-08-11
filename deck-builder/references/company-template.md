@@ -1,8 +1,8 @@
 # 公司樣板 — 已驗證規格
 
-**檔案：**由 `config.json` 的 `company_template` 或 `DECK_BUILDER_TEMPLATE` 環境變數指定
-（本機為 `Slide Templete/Template B 12-13-2021.pptx`，1.9 MB · 13 頁 · **13 個版面** ·
-1 個 master · 15 個內嵌媒體）。
+**檔案：**內建於 `assets/company-template.pptx`（1.9 MB · 13 頁 · **13 個版面** ·
+1 個 master · 15 個內嵌媒體），不需設定即可使用。要改用別的版本就設 `config.json` 的
+`company_template` 或 `DECK_BUILDER_TEMPLATE` 環境變數。
 
 以下每一項都是從實際檔案讀出來的，不是推測。可以當成 ground truth，但**檔案一變動就重跑**
 `scripts/inspect_template.py`，不要相信這一頁。

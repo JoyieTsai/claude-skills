@@ -32,7 +32,7 @@ description: 產出可編輯的 .pptx 簡報。會先詢問對象（對外／對
 
 只提供這三個選項：
 
-1. **公司樣板**（對象為外部時建議這個）——真正的 master 繼承。樣板路徑取自 `config.json` 或 `DECK_BUILDER_TEMPLATE` 環境變數（見下方「設定」）。其已驗證的版面與色票見 `references/company-template.md`。
+1. **公司樣板**（對象為外部時建議這個）——真正的 master 繼承。**樣板已內建在 `assets/company-template.pptx`，不需設定即可使用**（要換成別的版本見下方「設定」）。其已驗證的版面與色票見 `references/company-template.md`。
 2. **系統推薦**——以公司主色 `#0d63ba` 為基礎，但版面更簡潔密實。當公司樣板的公共安全框架與主題不符，或是內部快速簡報時使用。見 `references/recommended-style.md`。
 3. **使用者提供的樣板**——問對方 `.pptx`／`.potx` 的路徑，先對它跑 `scripts/inspect_template.py`，把版面、色票與字體報告給對方看，再開始做。使用 `style: "custom"`，`template` 設為他們的路徑。
 
@@ -48,12 +48,18 @@ description: 產出可編輯的 .pptx 簡報。會先詢問對象（對外／對
 
 ## 設定
 
-公司樣板的路徑因機器而異，所以不寫在這個 repo 裡。依序解析：
+**公司樣板已內建在 `assets/company-template.pptx`，不需要任何設定。** clone 下來就能用
+`style: "company"`。
 
-1. `DECK_BUILDER_TEMPLATE` 環境變數
-2. `<skill>/config.json`，內容為 `{"company_template": "/path/to/Template.pptx"}`
+解析順序（前面找到就用前面的）：
 
-以 `config.example.json` 為範本建立 `config.json`（該檔已被 gitignore）。若兩者皆無而 spec 又沒指定 `template`，`build_deck.py` 會直接報錯並說明怎麼設定——不會猜。
+1. spec 裡明寫的 `template`
+2. `DECK_BUILDER_TEMPLATE` 環境變數
+3. `<skill>/config.json`，內容為 `{"company_template": "/path/to/Template.pptx"}`
+4. 內建的 `assets/company-template.pptx`
+
+後兩者是給「公司發了新版樣板」或「要用另一份樣板」的情況。設了但檔案不存在會**直接報錯**，
+不會無聲改用內建的那份——否則你會拿到一份看起來成功、其實用舊樣板做的簡報。
 
 spec 裡明寫的 `template` 一律優先，所以 `custom` 風格與一次性樣板不受影響。
 
@@ -75,7 +81,7 @@ spec 裡明寫的 `template` 一律優先，所以 `custom` 風格與一次性�
 
 分三個動作：
 
-1. **把大綱寫到 `<deck-name>-outline.md`**——每頁一個區塊，讓分頁位置看得見。每個區塊要有：頁碼、版面名稱、標題、2–4 條要點、講者備註、`[image: …]` 標記。
+1. **把大綱寫到 `<deck-name>-outline.md`**——每頁一個區塊，讓分頁位置看得見。每個區塊要有：頁碼、版面名稱、標題、2–4 條要點、講者備註、`[image: …]` 標記。**照 `references/markdown-format.md` 的格式寫**，這樣同一個檔案就是步驟 4 的 build 輸入，不必手抄成 JSON——抄寫是大綱與成品走鐘的地方。
 2. **把整份大綱貼在對話裡**，不是只給摘要、也不是只給檔案路徑。使用者應該不必開任何檔案就能確認或指正。附上頁數與預估時長，讓長度一眼可判斷。
 3. **明確問要不要開始做，或要改什麼**——然後等。沒回應不等於同意。「看起來不錯」是同意；針對第 4 頁的提問不是。
 
@@ -98,11 +104,17 @@ spec 裡明寫的 `template` 一律優先，所以 `custom` 風格與一次性�
 
 ```bash
 python3 ~/.claude/skills/deck-builder/scripts/build_deck.py \
-  --spec /path/to/deck.json \
+  --spec /path/to/deck.md \
   --out  /path/to/output.pptx
 ```
 
-依已確認的大綱寫 JSON——格式見 `references/spec-format.md`，可運作的範例在 `assets/example-company.json` 與 `assets/example-recommended.json`。只有要覆蓋既有輸出時才加 `--force`。
+**`--spec` 直接吃步驟 3 那份 `.md` 大綱**——不必再手抄成 JSON。這是預設做法：抄一次就多一次
+走鐘的機會，而使用者確認的是大綱，不是 spec。格式見 `references/markdown-format.md`，
+可直接跑的範例在 `assets/example-company.md` 與 `assets/example-recommended.md`。
+
+需要更精細的控制時，`--spec` 也吃 JSON（依副檔名判斷）——格式見 `references/spec-format.md`，
+範例在 `assets/example-company.json` 與 `assets/example-recommended.json`。兩者走的是同一個
+builder，所有規則與檢查完全相同。只有要覆蓋既有輸出時才加 `--force`。
 
 腳本會處理那些會無聲出錯的地方：
 

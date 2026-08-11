@@ -83,7 +83,8 @@ mv ~/claude-skills/* ~/claude-skills/.git* ~/.claude/skills/
 # uiux-audit：可選，啟用瀏覽器截圖
 bash ~/.claude/skills/uiux-audit/install.sh
 
-# deck-builder：公司樣板路徑因機器而異，不進版控
+# deck-builder：不需設定。公司樣板已內建在 assets/company-template.pptx。
+# 只有要改用別的樣板（例如公司發了新版）時才做這一步：
 cp ~/.claude/skills/deck-builder/config.example.json \
    ~/.claude/skills/deck-builder/config.json
 # 再把裡面的 company_template 改成你的樣板實際路徑

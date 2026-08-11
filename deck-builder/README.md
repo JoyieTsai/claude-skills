@@ -4,7 +4,7 @@
 
 三種風格：
 
-- **公司樣板** — 由 `config.json` 指定路徑，真正的 master 繼承
+- **公司樣板** — 已內建在 `assets/company-template.pptx`，clone 完直接可用，真正的 master 繼承
 - **系統推薦** — 保留企業藍，但版面更簡潔密實的自繪風格
 - **使用者提供的樣板** — 先檢視你的 `.pptx`／`.potx`，報告版面與色票後再開始做
 
@@ -12,9 +12,18 @@
 
 此 skill 位於 `claude-skills` repo——完整 clone 步驟見該 repo 的 [README](../README.md)。
 
-### 設定公司樣板路徑
+**公司樣板不需要設定。** 它跟著 skill 一起附在 `assets/company-template.pptx`，所以 clone
+下來就能用 `style: "company"` 做簡報。
 
-樣板路徑因機器而異，所以不進版控。以範例檔為範本建立自己的 `config.json`：
+### 換成別的樣板（選用）
+
+公司發了新版樣板，或你要用另一份時，才需要這一步。優先序高到低：
+
+```bash
+export DECK_BUILDER_TEMPLATE="$HOME/Documents/.../Your Template.pptx"
+```
+
+或建立 `config.json`（已被 gitignore，因為絕對路徑因機器而異）：
 
 ```bash
 cp ~/.claude/skills/deck-builder/config.example.json \
@@ -22,13 +31,8 @@ cp ~/.claude/skills/deck-builder/config.example.json \
 # 然後把 company_template 改成你的樣板實際路徑
 ```
 
-`config.json` 已被 gitignore。也可以改用環境變數，它的優先序更高：
-
-```bash
-export DECK_BUILDER_TEMPLATE="$HOME/Documents/.../Your Template.pptx"
-```
-
-兩者皆無而 spec 又沒指定 `template` 時，`build_deck.py` 會直接報錯並說明怎麼設定——不會猜。只用「系統推薦」風格或每次都在 spec 裡明寫 `template` 的話，這一步可以略過。
+設了但檔案不存在會**直接報錯**，不會無聲改用內建那份——否則你會拿到一份看起來成功、其實
+用舊樣板做的簡報。spec 裡明寫的 `template` 一律優先於以上兩者。
 
 ### Cursor
 
@@ -47,6 +51,8 @@ ln -s ~/claude-skills/deck-builder .cursor/skills/deck-builder
 ```
 
 在 Agent 對話輸入 `/deck-builder`，或用自然語言觸發。
+
+> Cursor 用符號連結時，`assets/company-template.pptx` 也一起指到同一份，不需另外複製。
 
 > 若你已把本 repo 裝在 `~/.claude/skills/`，Cursor 通常也會直接讀到，不必再連結一份。
 
@@ -74,6 +80,43 @@ ln -s ~/claude-skills/deck-builder .cursor/skills/deck-builder
 5. **驗證後交付** — 一定跑 `verify_deck.py`，過了才交。
 
 交付物是你能在 PowerPoint 打開並繼續編輯的檔案。
+
+### 直接用 Markdown 做
+
+第 3 步那份大綱**本身就是 build 的輸入**，不必再轉成別的格式：
+
+```bash
+python3 ~/.claude/skills/deck-builder/scripts/build_deck.py \
+  --spec deck.md --out deck.pptx
+```
+
+```markdown
+---
+style: company
+language: zh-TW
+---
+
+## Cover
+**標題** Genie 2026 設計審核
+**副標** 無障礙稽核 · 2026-08-04
+
+## Content Heading
+**標題** 灰階文字有 5 個色階不符 AA
+- `#b4b4b4` 於白底為 1.90:1
+- 影響全站說明文字
+**備註** 這是 P0-1。
+
+## Thank you
+```
+
+一頁一個 `##`，標題文字就是版面名稱（`### 4 · Cover` 這種大綱編號會自動去掉）。表格用
+Markdown 表格語法，圖表用 `**圖表**` 加一個 JSON 區塊。完整欄位對照見
+`references/markdown-format.md`，可直接跑的範例是 `assets/example-company.md` 與
+`assets/example-recommended.md`。
+
+為什麼是同一個檔案：spec 和大綱只要分成兩份，中間那次手抄就沒有人檢查，而使用者確認的是
+大綱、產出的卻是 spec。需要更精細控制時 `--spec` 一樣吃 JSON（依副檔名判斷），兩者走同一個
+builder、同一套檢查。
 
 ## 圖表
 
@@ -122,21 +165,26 @@ python3 ~/.claude/skills/deck-builder/scripts/verify_deck.py deck.pptx
 ```
 deck-builder/
 ├── SKILL.md                     # Agent 遵循的工作流程
-├── config.example.json          # 複製成 config.json 並填入你的樣板路徑
+├── config.example.json          # 只在要換掉內建樣板時才需要
 ├── references/
 │   ├── company-template.md      # 公司樣板已驗證規格：色票、字體、13 個版面
 │   ├── recommended-style.md     # 系統推薦風格的色票、字級、格線、版面
-│   ├── spec-format.md           # build_deck.py 讀的 JSON 格式
+│   ├── markdown-format.md       # 用 .md 大綱直接 build 的格式對照
+│   ├── spec-format.md           # build_deck.py 讀的 JSON 格式（底層）
 │   ├── charts.md                # 圖表形式與色票的選用準則（實測數據）
 │   └── narrative.md             # 敘事結構、頁數、大綱範本
 ├── scripts/
 │   ├── inspect_template.py      # 讀出任何樣板的版面、色票、字體、重複版面
-│   ├── build_deck.py            # spec JSON → .pptx
+│   ├── build_deck.py            # spec .md／.json → .pptx
+│   ├── md_to_spec.py            # .md 大綱 → spec（也可單獨跑來檢查轉換結果）
 │   ├── charts.py                # 原生可編輯圖表 ＋ 已驗證色票
 │   └── verify_deck.py           # 交付前檢查
 └── assets/
-    ├── example-company.json     # 可直接跑的公司樣板範例
-    └── example-recommended.json # 可直接跑的推薦風格範例
+    ├── company-template.pptx    # 內建公司樣板，不需設定
+    ├── example-company.md       # 可直接跑的公司樣板範例（Markdown）
+    ├── example-recommended.md   # 可直接跑的推薦風格範例（Markdown）
+    ├── example-company.json     # 同一份內容的 JSON 寫法
+    └── example-recommended.json # 同上
 ```
 
 ## 日後修改注意
@@ -153,4 +201,13 @@ deck-builder/
 - placeholder 型別**不能用子字串比對**。python-pptx 把型別印成 `SUBTITLE (4)`，字串裡含有 `TITLE`——所以 `"TITLE" in t` 會把封面副標當成標題。`build_deck.py` 用 `ph_by_type()` 精確比對列舉名稱，`verify_deck.py` 用 `is_title_ph()`；否則副標會被拿去檢查「標題只有一行」的規則，而標題也可能被寫進副標框。
 - **圖表部件裡的字體要再設一次。** `font.name` 一樣只寫 `a:latin`，而圖表是獨立的 part、有自己的文字屬性（軸標籤、圖例、資料標註各有一個 `defRPr`），所以 `charts.py` 的 `_apply_fonts()` 走訪整個 `chartSpace` 補上 `a:ea`／`a:cs`。而且 `a:defRPr` 的子元素**有 schema 順序**（solidFill?, latin, ea, cs），順序錯了 PowerPoint 會要求修復檔案——所以每個元素是插在實際存在的前一個元素之後，不是直接 append。
 - **圖表沒有圓角可設。** DrawingML 的數列沒有 corner radius，所以 dataviz 規格裡的「4px 圓角資料端」在 pptx 做不到。這件事寫在 `charts.md` 裡明說，而不是默默照做失敗——畫一個圓角矩形就不是圖表了。
+- **內建樣板是最後的 fallback，不是最優先。** 解析順序是 spec 的 `template` →
+  `DECK_BUILDER_TEMPLATE` → `config.json` → `assets/company-template.pptx`。已經設過路徑的
+  人升級後仍會拿到自己那份。而設了路徑卻找不到檔案時是**硬錯誤**，刻意不退回內建那份——
+  無聲換樣板會產出一份看起來成功、實際用錯樣板的簡報。
+- **`.md` 與 `.json` 走同一個 builder。** `md_to_spec.py` 只做格式轉換，轉完之後所有規則
+  （版面名稱、每頁只能一種內容、`Thank you` 保護、深底禁圖表）都還在。所以新增 spec 欄位時
+  記得同步 `md_to_spec.py` 的 `FIELDS`，否則那個欄位在 Markdown 裡會被當成內文而不是欄位。
+- **Markdown 的 frontmatter 是手寫的，不是 YAML。** 只支援 `key: value` 純量，刻意不用
+  `pyyaml`——為了六個值增加一個 pip 依賴，會讓全新 clone 跑不動。
 - **改色票就要重跑驗證器。** `CATEGORICAL` 的色盲區辨是當成**一組**量的：換掉其中一個色相，會破壞它對其他色相的保證。改完要跑 dataviz 的 `validate_palette.js`，並同步更新 `verify_deck.py` 的 `CHART_COLORS` 與 `charts.md` 裡的實測數字。

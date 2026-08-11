@@ -1,3 +1,4 @@
 {
+  "_comment": "選用。公司樣板已內建在 assets/company-template.pptx，不設定也能用。只有要改用別的樣板（例如公司發了新版）時才把這個檔複製成 config.json 並填路徑。設了但檔案不存在會直接報錯，不會無聲退回內建那份。",
   "company_template": "~/Documents/path/to/Your Company Template.pptx"
 }

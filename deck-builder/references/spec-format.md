@@ -3,6 +3,10 @@
 `build_deck.py` 讀一個 JSON 檔。請從**已確認的**大綱寫出來——不要把 spec 和大綱分開寫，
 它們一定會走鐘。
 
+> **多數情況不需要寫這份 JSON。** `--spec` 也直接吃 `.md` 大綱，格式見
+> `markdown-format.md`——那樣使用者確認的檔案就是 build 的輸入，中間沒有手抄。這一頁是
+> 底層格式，需要 `entries`（手寫議程）或想精確控制欄位時才用。
+
 ```json
 {
   "style": "company",
@@ -59,7 +63,7 @@
 
 | Key | 必填 | 說明 |
 |---|---|---|
-| `template` | `custom` 必填 | 來源 `.pptx`／`.potx` 的絕對路徑。`company` 風格省略時，會從 `config.json` 或 `DECK_BUILDER_TEMPLATE` 解析（見 SKILL.md 的「設定」） |
+| `template` | `custom` 必填 | 來源 `.pptx`／`.potx` 的絕對路徑。`company` 風格省略時依序解析 `DECK_BUILDER_TEMPLATE` → `config.json` → 內建的 `assets/company-template.pptx`（見 SKILL.md 的「設定」） |
 | `style` | 是 | `company` \| `recommended` \| `custom` |
 | `language` | 是 | `zh-TW` \| `en` \| `mixed`——決定 CJK 的 `a:ea` 字體 |
 | `audience` | 否 | `external` \| `internal`——只寫進檔案內容屬性 |
