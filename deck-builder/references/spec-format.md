@@ -88,7 +88,7 @@
 | `columns` | [string[], string[]] | **推薦風格，僅 `two-column`。** 兩組文字陣列 |
 | `image` | string | 絕對路徑；版面有 PICTURE placeholder 就放進去，否則自行擺放並縮放至適合 |
 | `caption` | string | **推薦風格，僅 `image-full`。** 圖片下方的來源／出處行 |
-| `table` | object | `{headers: [], rows: [[]]}` |
+| `table` | object | `{headers: [], rows: [[]]}`，可加 `col_widths` |
 | `chart` | object | **原生、可在 PowerPoint 編輯的圖表**（不是圖片）。欄位與選用準則見 `charts.md` |
 | `entries` | object[] | **僅 `Agenda` 版面。** `[{"title": …, "page": …}]`，用來取代自動產生的議程 |
 | `keep_closing` | bool | **僅 `Thank you` 版面。** 設 `false` 才會讓這頁照 spec 產生內容；預設維持樣板原樣 |
@@ -132,6 +132,10 @@
 - BODY placeholder 裝不下內容時會被**放大**，上限是 y = 6.85 吋的頁尾列。
   `Content with image - right` 的 BODY 只有 0.48 吋高（圖說欄位），否則三條要點會無聲溢出。
 - 沒填內容的 placeholder 會被**刪除**，這樣使用者打開來編輯時不會看到「Click to add text」。
+- **表格欄寬預設均分，內容不均時用 `col_widths` 調。** 數值是相對權重，不必加總成任何數：
+  `"col_widths": [2.1, 3.0, 1.0, 1.0, 3.4]`。均分在內容不均時會出錯——一個長識別字
+  （例如 `us.anthropic.claude-opus-5`）會被折斷在中間，而旁邊的數字欄空著一半。
+  數量與欄數不符、或有非正數 → 硬錯誤。
 - 超過 8 條要點，或任一條超過約 120 字元 → 警告，不是錯誤。應該回頭修大綱，而不是讓它溢出。
 - 圖片路徑不存在、同一頁同時有 `bullets`+`table`、`chart`+`table`、`chart`+`image`、
   或 `--out` 等於樣板本身 → 硬錯誤。

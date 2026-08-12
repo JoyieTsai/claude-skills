@@ -69,7 +69,7 @@ title: Genie 2026 設計審核
 | `- 項目`（縮排 2 格 = 第二層） | `bullets` |
 | 沒有項目符號的一般段落 | `paragraphs` |
 | `**左欄**` / `**右欄**` 之後的項目 | `columns`（推薦風格的 `two-column`） |
-| Markdown 表格 | `table` |
+| Markdown 表格 | `table`（欄寬均分；要調就改用 JSON 的 `col_widths`） |
 | `**圖表**` ＋ 隨後的 ```` ```json ```` 區塊 | `chart` |
 | `![](/abs/path.png)` 或 `**[image: /abs/path.png]**` | `image` |
 | `**圖說** …` | `caption` |

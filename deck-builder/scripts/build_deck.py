@@ -289,6 +289,23 @@ def add_table(slide, table_spec, x, y, w, h, header_fill=PRIMARY,
     table = shape.table
     r0 = 0
 
+    # Equal columns are wrong whenever the content isn't: a 5-column table holding one
+    # long identifier and three short numbers wraps the identifier mid-token while the
+    # number columns sit half empty. Weights are relative, so they don't have to add up.
+    weights = table_spec.get("col_widths")
+    if weights:
+        if len(weights) != ncols:
+            die(f"col_widths has {len(weights)} entries, expected {ncols}")
+        if any(not isinstance(v, (int, float)) or v <= 0 for v in weights):
+            die("col_widths entries must all be positive numbers")
+        total = float(sum(weights))
+        used, emu_w = 0, Inches(w)
+        for c, weight in enumerate(weights):
+            # Last column absorbs the rounding, so the columns still sum to the box width.
+            cw = (emu_w - used) if c == ncols - 1 else int(emu_w * weight / total)
+            table.columns[c].width = cw
+            used += cw
+
     if headers:
         for c, text in enumerate(headers):
             cell = table.cell(0, c)
