@@ -25,9 +25,9 @@
 | --- | --- |
 | **一台 Mac** | 左上角  →「關於這台 Mac」。Apple M 系列最順；Intel 也能用，但轉錄會慢很多。 |
 | **約 3GB 空間** | 語音辨識模型約 1.6GB，加上其他元件。 |
-| **網路** | 第一次安裝要下載模型，約 5–30 分鐘，看網速。 |
+| **網路** | 倉庫裡沒有語音模型。第一次安裝會下載約 1.6GB，約 5–30 分鐘，看網速。 |
 | **Homebrew 和 git** | 見下面〈檢查 Homebrew 和 git〉。 |
-| **這個工具資料夾** | 用拿到的壓縮檔解壓，或用 git 下載私有倉庫。 |
+| **這個工具資料夾** | 用 git 下載，見下面〈取得工具資料夾〉。 |
 
 ### 檢查 Homebrew 和 git
 
@@ -56,6 +56,20 @@ Homebrew 是 Mac 上裝軟體的工具，安裝腳本會用它裝轉檔、語音
 
 這兩樣請自己裝，不要叫 AI 代裝（要輸入你的電腦密碼）。
 
+### 取得工具資料夾
+
+倉庫裡只有程式和說明，**沒有**那個 1.6GB 的語音模型。模型要等下面的安裝程式自己下載。
+
+在終端機貼上：
+
+```bash
+cd ~/Desktop
+git clone -b zoetu025-ai-patch-1 https://github.com/JoyieTsai/claude-skills.git
+cd claude-skills/meeting-minutes
+```
+
+下載到的工具在 `meeting-minutes` 這一層，裡面要看得到 `install.sh` 和 `1-install.md`。不要改用別的網址，也不要改用 `main` 分支。
+
 ### 方式 A：請 AI 幫你裝（推薦）
 
 1. 打開你平常用的 AI 工具，打開這個工具資料夾（裡面看得到 `install.sh` 的那一層）：
@@ -80,7 +94,7 @@ Homebrew 是 Mac 上裝軟體的工具，安裝腳本會用它裝轉檔、語音
    ./install.sh --yes
    ```
 
-   `--yes` 代表「全部用建議的設定，不要一題一題問我」。它會依你的晶片選好模型、補齊缺的元件、建好會議資料夾。
+   `--yes` 代表「全部用建議的設定，不要一題一題問我」。它會依你的晶片選好模型、補齊缺的元件、下載語音模型、建好會議資料夾。模型約 1.6GB，這段最久。
 
 3. 看到最後印出安裝完成的摘要就好了。
 
@@ -112,27 +126,28 @@ Homebrew 是 Mac 上裝軟體的工具，安裝腳本會用它裝轉檔、語音
 | --- | --- |
 | **Windows 10 或 11（64 位元）** | 大部分公司電腦都是。 |
 | **約 4GB 空間** | 語音辨識模型約 1.6GB，加上 Python、轉檔程式等元件。 |
-| **網路** | 第一次安裝要下載模型和元件，約 10–40 分鐘，看網速。 |
-| **這個工具資料夾** | 用拿到的壓縮檔，或用 git 下載。 |
+| **網路** | 倉庫裡沒有語音模型。第一次安裝會下載約 1.6GB，加上其他元件，約 10–40 分鐘。 |
+| **這個工具資料夾** | 用 git 下載，見下面。路徑不能有中文。 |
 
 **轉錄會比 Mac 慢。** Windows 版只用電腦的處理器轉錄，1 小時的錄音可能要轉 1–3 小時。轉的時候電腦還是可以用，只是會比較慢。
 
-### 先把工具資料夾放到 `C:\meeting-minutes`
+### 先把工具資料夾放到 `C:\claude-skills\meeting-minutes`
 
 **這一步很重要：工具資料夾的位置不能有中文。** Windows 版的語音辨識程式讀不到中文路徑，放在「桌面」「文件」這類資料夾底下，常常會因為路徑有中文而失敗。
 
-- **拿到的是壓縮檔**：解壓縮後，把裡面含 `install.cmd` 的那個資料夾改名為 `meeting-minutes`，搬到 `C:\` 底下。搬好後，打開 `C:\meeting-minutes` 應該直接看到 `install.cmd`、`1-install.md` 這些檔案。
-- **會用 git**：直接下載到這個位置：
+在 PowerShell 貼上。這會把倉庫放到 `C:\claude-skills`，工具在裡面的 `meeting-minutes`：
 
-  ```
-  git clone https://github.com/zoetu025-ai/meeting-minutes.git C:\meeting-minutes
-  ```
+```
+git clone -b zoetu025-ai-patch-1 https://github.com/JoyieTsai/claude-skills.git C:\claude-skills
+```
 
-不用先裝其他軟體。轉檔程式、Python、git 這些，安裝程式會自己用 Windows 內建的「應用程式安裝程式」（winget）裝好。
+打開 `C:\claude-skills\meeting-minutes`，要直接看到 `install.cmd` 和 `1-install.md`。不要改用 `main` 分支。
+
+不用先裝其他軟體。轉檔程式、Python、git 這些，安裝程式會自己用 Windows 內建的「應用程式安裝程式」（winget）裝好。語音模型也是這時候下載，倉庫裡沒有。
 
 ### 方式 A：請 AI 幫你裝（推薦）
 
-1. 打開你平常用的 AI 工具，打開 `C:\meeting-minutes` 這個資料夾：
+1. 打開你平常用的 AI 工具，打開 `C:\claude-skills\meeting-minutes` 這個資料夾：
    - **Cursor／VS Code**：選「File → Open Folder」。
    - **Codex／Claude Code**：在這個資料夾裡開啟它。
 2. 打開 AI 對話面板。Cursor 和 VS Code 要切到 **Agent** 模式。
@@ -148,7 +163,7 @@ Homebrew 是 Mac 上裝軟體的工具，安裝腳本會用它裝轉檔、語音
 
 ### 方式 B：自己雙擊安裝
 
-1. 打開 `C:\meeting-minutes`，雙擊 **`install.cmd`**。
+1. 打開 `C:\claude-skills\meeting-minutes`，雙擊 **`install.cmd`**。
 2. 如果跳出藍色的「Windows 已保護您的電腦」，按「其他資訊」→「仍要執行」。
 3. 會跳出一個黑色視窗，一題一題問你。**每一題都直接按 Enter**，就是用建議的設定。
 4. 中途跳出「是否允許此 App 變更你的裝置？」時按「是」。
@@ -181,7 +196,7 @@ Homebrew 是 Mac 上裝軟體的工具，安裝腳本會用它裝轉檔、語音
 | （Mac）`command not found: brew` | 回到〈檢查 Homebrew 和 git〉。裝完一定要關掉終端機重開。 |
 | （Mac）`command not found: git` | 在終端機執行 `xcode-select --install`，等安裝視窗跑完。 |
 | （Mac）說缺少 ffmpeg／whisper-cpp／uv 然後停住 | 再跑一次 `./install.sh --yes`。 |
-| （Windows）「路徑裡有中文或特殊字元」 | 照〈先把工具資料夾放到 `C:\meeting-minutes`〉搬位置，再從新位置重新安裝。 |
+| （Windows）「路徑裡有中文或特殊字元」 | 照〈先把工具資料夾放到 `C:\claude-skills\meeting-minutes`〉搬位置，再從新位置重新安裝。 |
 | （Windows）「找不到 winget」 | 打開「Microsoft Store」，搜尋「應用程式安裝程式」（App Installer），更新或安裝它，再重新安裝。 |
 | （Windows）說還是找不到 ffmpeg 或 uv | 關掉黑色視窗，重新雙擊 `install.cmd`。剛裝好的程式有時要重開視窗才找得到。 |
 | 模型下載到一半斷掉 | 重新安裝一次（Mac：`./install.sh --yes`；Windows：雙擊 `install.cmd`）。已下載完的會跳過，只補沒完成的。 |
@@ -209,7 +224,7 @@ Homebrew 是 Mac 上裝軟體的工具，安裝腳本會用它裝轉檔、語音
 
 | 位置 | 裡面是什麼 |
 | --- | --- |
-| 工具資料夾（Mac 含 `install.sh`、Windows 是 `C:\meeting-minutes`） | 工具本身與模型 |
+| 工具資料夾（Mac 含 `install.sh`、Windows 是 `C:\claude-skills\meeting-minutes`） | 工具本身與模型 |
 | 桌面的「會議記錄」資料夾 | 你的錄音和會議記錄。刻意跟工具分開放，避免會議內容被上傳到 GitHub |
 | 家目錄的 `.cursor`、`.claude`、`.codex` 等資料夾裡的 `minutes.md` | 讓各個 AI 工具認得 `/minutes` 的小檔案 |
 
@@ -264,11 +279,11 @@ git --version
 
 ```bash
 cd ~/Desktop
-git clone https://github.com/zoetu025-ai/meeting-minutes.git
-cd meeting-minutes
+git clone -b zoetu025-ai-patch-1 https://github.com/JoyieTsai/claude-skills.git
+cd claude-skills/meeting-minutes
 ```
 
-這是私有倉庫。clone 要求登入或權限失敗時：**停止。** 請使用者改用已經拿到的工具資料夾。不要換別的網址，也不要 clone 到別的路徑。
+clone 失敗就停止。不要改網址，不要改用 `main`，也不要 clone 到別的路徑。倉庫裡沒有語音模型；下一步的 `./install.sh --yes` 會下載約 1.6GB，這是預期行為，不要把它當成缺檔。
 
 ### 3. 用預設值安裝（不要改成互動問答）
 
@@ -342,8 +357,8 @@ Test-Path .\install.cmd; Test-Path .\INSTRUCTIONS.md
 
 | 結果 | 做法 |
 | --- | --- |
-| 兩個不是都 `True` | 你不在工具資料夾。`Set-Location` 到含 `install.cmd` 的那一層再重跑。找不到就**停止**，請使用者照〈先把工具資料夾放到 `C:\meeting-minutes`〉準備好資料夾。 |
-| 路徑裡有中文或全形字（例如 `桌面`、`文件`、中文使用者名稱） | **停止。** 請使用者照〈先把工具資料夾放到 `C:\meeting-minutes`〉搬位置，然後在新位置重開 AI 工具。不要自己搬檔案。 |
+| 兩個不是都 `True` | 你不在工具資料夾。`Set-Location` 到含 `install.cmd` 的那一層再重跑。找不到就**停止**，請使用者照〈先把工具資料夾放到 `C:\claude-skills\meeting-minutes`〉準備好資料夾。 |
+| 路徑裡有中文或全形字（例如 `桌面`、`文件`、中文使用者名稱） | **停止。** 請使用者照〈先把工具資料夾放到 `C:\claude-skills\meeting-minutes`〉搬位置，然後在新位置重開 AI 工具。不要自己搬檔案。 |
 
 記下這個路徑，後面稱為 `<repo>`。
 
