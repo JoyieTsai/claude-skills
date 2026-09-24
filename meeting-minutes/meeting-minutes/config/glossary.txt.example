@@ -1,0 +1,12 @@
+# 術語表（複製到 ~/.config/meeting-minutes/glossary.txt 後自行維護）
+# 逗號分隔的詞會用於 whisper --prompt（腳本會自動截短）
+# 另可加「錯詞=>正詞」列，供轉錄後校正
+
+Figma, Storyboard, Storybook, design token, design tokens, variants, variant,
+breakpoint, breakpoints, Dark Mode, InfoShare, UI Kit, Homepage, Prototype,
+Component, Components, Wireframe, Mockup, Notion, Jira, Slack, Cursor
+
+# 常見誤聽校正（可依實際會議追加）
+維理恩斯=>variants
+設計頭肯=>design token
+斷點=>breakpoint
