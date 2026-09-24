@@ -334,6 +334,7 @@ glossary_path: "$CONFIG_DIR/glossary.txt"
 model: $model
 models_dir: "$models_dir"
 arch: $arch
+python_path: "$REPO_DIR/.venv/bin/python"
 
 # 可選；Notion 整合用。空 = 不自動寫入。
 notion:
