@@ -1,0 +1,36 @@
+# 範本。實際使用的檔案是 <repo>/config/config.yaml，由 ./install.sh 產生，
+# 而且**不進版控**（每台機器的絕對路徑都不一樣）。
+# 只有在 install.sh 出問題、要手動建立時才需要抄這份。
+#
+# 設計原則：所有工具檔案都收在 repo 資料夾內，不散落在家目錄。
+# 唯一兩個例外見 scripts/paths.py 的說明。
+
+# ── 工具本身（全部在 repo 內，把下面的路徑換成你的 repo 位置）──
+repo_dir: "/Users/你的帳號/Desktop/meeting-minutes"
+repo_remote: "git@github.com:zoetu025-ai/meeting-minutes.git"
+instructions_path: "/Users/你的帳號/Desktop/meeting-minutes/INSTRUCTIONS.md"
+template_path: "/Users/你的帳號/Desktop/meeting-minutes/templates/minutes.md"
+templates_dir: "/Users/你的帳號/Desktop/meeting-minutes/templates"
+
+# 術語表在 repo 內且進版控 ＝ 全隊共用。
+# 任何人跑 learn.py 修好一個詞，push 出去，全隊下次轉錄就都對了。
+glossary_path: "/Users/你的帳號/Desktop/meeting-minutes/config/glossary.txt"
+
+model: ggml-large-v3-turbo.bin          # Intel Mac 用 ggml-medium.bin
+models_dir: "/Users/你的帳號/Desktop/meeting-minutes/models"
+arch: apple_silicon                     # 或 intel
+
+# ── 會議資料（刻意放在 repo 外面）──
+# 錄音與逐字稿是機密內容，不能跟 .git 住在同一個資料夾——一個 git add -f
+# 或改錯 .gitignore 就外洩了。install.sh 預設會建在桌面。
+data_root: "/Users/你的帳號/Desktop/會議記錄"
+audio_dir: "/Users/你的帳號/Desktop/會議記錄/audio"
+# 舊鍵：逐字稿改放 minutes/<會議記錄同名>/。尋檔時當後援。
+transcripts_dir: "/Users/你的帳號/Desktop/會議記錄/minutes"
+minutes_dir: "/Users/你的帳號/Desktop/會議記錄/minutes"
+
+# 可選；Notion 整合用。空 = 不自動寫入。
+# ⚠️ 這裡填的資料庫 ID 不是權限邊界。要真的限制範圍，請在 Notion 那邊
+# 只把「會議記錄」資料庫分享給這個 integration。
+notion:
+  database_id: ""

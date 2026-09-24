@@ -1,0 +1,460 @@
+# 術語表
+# 逗號分隔的詞會用於 whisper --prompt（腳本會自動截短到 400 字元）
+# → 高頻、最容易被音譯成亂碼的詞放前面，被截掉的是後面那些
+# 另可加「錯詞=>正詞」列，供轉錄後校正（這段不受長度限制，優先靠這裡）
+
+# --- 前端／網站（Tw site 場景，最常出現，放最前）---
+README, timeline, news.json, Tailwind, Vuetify, Bootstrap, MDB,
+Storybook, Sourcetree, ARCHITECTURE, CHANGELOG, release.json,
+build, deploy, dist, server, static, JSON, HTML, Markdown, MDX,
+master, branch, commit, merge, review, log, page, data, component,
+localhost, preview, npm, fetch, HTTP request, video
+
+# --- 設計 ---
+Figma, design token, design tokens, variants, variant, breakpoint,
+Dark Mode, UI Kit, Prototype, Component, Wireframe, Mockup,
+Material Design, Font Awesome, AOS, section, layout
+
+# --- 工具 ---
+Notion, Jira, Slack, Cursor, Firebase, Nuxt
+
+# --- CSI 產品／平台（來源：https://www.csitech.com/ 公開產品頁，2026-09-14）---
+# 只收專有名詞與產品名；Investigation、Evidence 這類普通英文不進表，免得佔 prompt
+CSI, CSI Technology Group, Computer Square, InfoShare, InfoShare Engine,
+CAD, RMS, MDT, Fire EMS, eTicket, ePCR, NERIS, CompStat, Info P&P,
+eProsecution, eFiling, eDiscovery, eCDR, eCourts, ePetition, PCMS,
+VW Portal, InfoVNS, InfoScribe, InfoArchive, InfoFile, InfoVideo,
+InfoRecording, InfoDoc, LIMS, ALPR, iLog, SAR, Rolmes, Fusion Center,
+Global Search, GJXML, CJIS, AOPC, Cellebrite, Wasabi, Rosigner,
+InfoCAD, InfoFire, UIKey, Tours
+
+# --- 同仁（2026-09-14 提供；whisper 常把英文名聽成亂碼）---
+Alice, Allen, Angela, Brian, Charles, Charlie, Cyndia, Eddy, Ellie,
+Elvin, Felicia, Hank, Huai-De, Ivan, Ivy, Jenny, JingYe, Joyie, Kevin,
+Lillian, Neil, Paggie Li, Peggy, Riley, Robert, Roger, Rose, Sean,
+Sharon, Viola, Weiting, Zoe
+
+# ===== 誤聽校正（已從 2026-09-10 training-2 實際稿件確認）=====
+DATA的REME=>data 的 README
+Data的remit=>data 的 README
+REME=>README
+remit=>README
+Rimi=>README
+tine line=>timeline
+TiNine=>timeline
+TIME LINE=>timeline
+tinigh=>timeline
+資料講=>資料夾
+心態網路=>靜態網頁
+心態往面=>靜態網頁
+
+# ===== 由 whisper × Apple 兩引擎交叉比對確認 =====
+# whisper 聽成「陳司馬」、Apple 聽成「陳司碼」→ 程式碼
+陳司馬檢查=>程式碼檢查
+陳司碼檢查=>程式碼檢查
+# whisper 聽成「HTM Reco」/「HTMLC」、Apple 聽成「HTML扣」→ HTML 碼
+HTM Reco=>HTML 碼
+HTMLC=>HTML 碼
+HTML扣=>HTML 碼
+HTM口=>HTML 碼
+
+# ===== 由 vad 0.5 / 0.25 / 0.15 三版交叉比對確認（2026-09-11）=====
+# 「MDD」在 0.25 版聽成「MDB」，且上下文是 Material Design based on Bootstrap
+MDD=>MDB
+# Tailwind：三版分別聽成 Tailway / Telwin / 太累
+Tailway=>Tailwind
+Telwin=>Tailwind
+# Vuetify
+victify=>Vuetify
+# Bootstrap：「Based on Booth Check」「不是trip的這一套」
+Booth Check=>Bootstrap
+Based on Bootstrap=>based on Bootstrap
+# merge / Sourcetree
+murge=>merge
+sauce tree=>Sourcetree
+# 「卡密」＝ commit（「你現在沒有卡密，他不會讓你切換」）
+卡密=>commit
+沒有commit=>沒有 commit
+# log 被聽成 ROG / Vlog
+ROG=>log
+Vlog=>log
+# 必填／選填（timeline 欄位說明整段都在講這兩個詞）
+選甜=>選填
+選田=>選填
+選TML=>選填
+幣點分=>必填
+幣點=>必填
+# breakpoint 的中文
+段點=>斷點
+# 報導
+活動報道=>活動報導
+新增報道=>新增報導
+
+# ===== 官網／上架用語（Us site training-1 已對過）=====
+測試賽=>測試站
+正式賽=>正式站
+Infoshare=>InfoShare
+InfoSharer=>InfoShare
+
+# ===== 仍待人工抽聽（不敢猜，逐字稿裡會留 ⚠️）=====
+# 約 00:00:31  三版分別「社會賽未來／大型平臺」「社會裝置／普通平臺」「社會賽不能用平台」
+#              Apple「supersie／我金臺」→ 完全無法收斂
+# 約 00:16:58  whisper「問了眼睛」、Apple「問Alan」→ 人名 Allen 已入表，下一場轉錄再對
+# 約 00:23:50  「Fone Olsen」推測為 Font Awesome，未確認，暫不校正
+# 約 00:22:06  「actual」「umpotecture」推測為 ARCHITECTURE 檔名，未確認
+# 「UNASO」交叉比對為「UI 套件」語境，待再聽一次確認
+# 版號規則：「V5.1」「就是月日」「5.12」三種說法，無法確定編碼方式
+
+# 註 1：原範例的「斷點=>breakpoint」已移除。
+#       「斷點」在中文設計討論裡是正確用詞，不該被換成英文。
+# 註 2：原範例的「維理恩斯」「設計頭肯」為假想範例，未在實際稿件出現，已移除。
+
+# ===== 人工校對回饋（2026-09-14，來源三份 .ai-review.md；已去掉會誤傷的短規則）=====
+No Module=>node_modules
+你烤蜜=>你 commit
+gitignol=>gitignore
+no module然後bist=>node_modules 然後 dist
+vertis=>Vertex
+gimini=>Gemini
+wrong date=>run dev
+Source 3=>Sourcetree
+componer的=>components 的
+TineLine=>timeline
+是避典=>是必填
+previct=>preview
+Mentify=>Vuetify
+Fone Olsen=>Font Awesome
+Booth Track=>Bootstrap
+Arctature=>Architecture
+FOOSTRIP=>Bootstrap
+的Jason=>的 json
+mudge=>merge
+tail weight=>Tailwind
+NPM Round Generate=>npm run generate
+內部賽=>內部站
+樣膚質=>樣複製
+候寫口=>候寫稿
+在用買=>在用 AI
+機試騎=>機自動
+# --- 未啟用（錯詞太短、是真英文單字、或「應該是」填成註解）---
+# Commie=>commit
+# Mask=>master
+# general=>generate
+# Alan=>Allen
+# King=>Kit
+# 聽到的=>我猜是
+# 公司內=>公司歷
+# 那是社會賽文=>？
+
+# ===== 人工校對回饋（2026-09-14，來源 2026-09-14-Us-site-training-1-20260707.ai-review）=====
+要加凝=>要加連
+後板腸=>後版面
+用膚質=>用複製
+會面負製來運=>去複製來用
+Funders=>Finder
+測試在=>測試站
+9的賽=>9的站
+面PO=>面 port
+內部曬=>內部站
+那一刀=>那一份
+資料架=>資料夾
+UIK=>UIKey
+# 我要負=>我要複          # 會誤傷「我要負責」
+# 接解醒=>接接線          # learn.py 把「直接解醒→直接接線」合成雙「接」
+# 你再把=>你再把同        # 會在所有「你再把」後面塞「同」
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:16:36  POP=>port
+
+# ===== 人工校對回饋（2026-09-14，來源 2026-09-14-Us-site-training-1-20260707.ai-review）=====
+性子安心=>西斯艾的新聞
+那手放=>那手動
+收集,後的=>人用超級誇張，
+news的take=>news的tab
+# 你照看=>你找找看        # 太泛，會改到別的「你照看」
+# 你喜歡=>那你切換        # 會把所有「你喜歡」改掉
+# 會新增=>會先暫停        # 會把所有「會新增」改成暫停
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:00:00  take=>tab
+
+# ===== 人工校對回饋（2026-09-14，來源 2026-09-14-2026-04-01_DesignTeam_AI應用分享.ai-review）=====
+Gimonite加科蛇=>Gemini 加 Cursor
+還有Cloud=>還有 Claude
+Sumnet=>Sonnet
+Hiku=>Haiku
+prump=>prompt
+一個券=>一個 Gem
+是月節=>是月結
+Reay=>React
+REAID=>React
+Ansis=>Analysis
+個園鋁=>個年假
+動採取=>動裁切
+GIMO奶=>Gemini
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:03:08  prompt=>Prompt
+
+# ===== 人工校對回饋（2026-09-21，來源 2026-09-21-Workshop---Claude-Context-and-Cache-20260821.ai-review）=====
+Alan跟Alvin=>Allen跟Elvin
+cashwrite=>cache_write
+cashread=>cache_read
+contact後面=>context 後面
+contact跟cash=>context 跟 cache
+cloud底下定義的cloud md=>Claude 底下定義的 CLAUDE.md
+cash會被emballot=>cache 會被 invalidate
+Sonet=>Sonnet
+cloudmd=>CLAUDE.md
+mcp2=>MCP tool
+cloud code=>Claude Code
+chatpoint=>checkpoint
+autocompat=>auto compact
+elvin=>Elvin
+DFOR=>default
+你是Compat=>你是 compact
+Compat=>compact
+# cloud底下定義的cloud=>Claude 底下定義的 CLAUDE.  # 截斷，缺 md，已改成長規則
+# comment是=>compact 是        # 會誤傷真的 comment
+# 跟cloud=>跟 Claude            # 會誤傷「cloud 儲存／Cloud」
+# 你下課=>你 /clear             # 會誤傷真的「下課」
+# 的情調=>的清掉                # 會誤傷「情調」
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:02:19  cash=>cache
+# 00:02:27  cash=>cache
+# 00:02:27  cash=>cache
+# 00:02:30  cash=>cache
+# 00:06:59  contact=>context
+# 00:10:21  button=>bottom
+# 00:10:21  button=>bottom
+# 00:14:33  comment=>compact
+# 00:46:24  Catch=>cache
+# 00:50:22  bryan=>Brian
+# 00:50:22  ellen=>Allen
+
+# ===== 人工校對回饋（2026-09-21，來源 2026-09-21-Workshop---Claude-Context-and-Cache-20260821.ai-review）=====
+supportEM的=>support 1M 的
+個銷售=>個 cache
+# cloud底下定義的cloud=>Claude 底下定義的 CLAUDE.  # 截斷，缺 md
+# comment是=>compact 是        # 會誤傷真的 comment
+# 跟cloud=>跟 Claude            # 會誤傷「cloud 儲存／Cloud」
+# 你下課=>你 /clear             # 會誤傷真的「下課」
+# 的情調=>的清掉                # 會誤傷「情調」
+# 是em=>是 1M                   # 會誤傷其他 em
+# 用em=>用 1M
+# 成em=>成 1M
+# compan=>compact              # 會誤傷 company
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:02:19  cash=>cache
+# 00:02:27  cash=>cache
+# 00:02:27  cash=>cache
+# 00:02:30  cash=>cache
+# 00:06:59  contact=>context
+# 00:10:21  button=>bottom
+# 00:10:21  button=>bottom
+# 00:14:33  comment=>compact
+# 00:46:24  Catch=>cache
+# 00:50:22  bryan=>Brian
+# 00:50:22  ellen=>Allen
+# 00:04:04  cash=>cache
+
+# ===== 人工校對回饋（2026-09-21，來源 2026-09-21-7-24-meeting.ai-review）=====
+要攝取=>要 search
+成攝取=>成 search
+放大劑=>放大鏡
+esortion=>inspection
+cosmary expansion=>customer inspection
+Andris=>address
+roar island=>Rhode Island
+三千歲=>三千次
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:02:02  shoot=>sheet
+# 00:02:41  shoot=>sheet
+# 00:20:31  consumer=>customer
+# 00:22:56  infection=>inspection
+# 00:23:19  installation=>inspection
+
+# ===== 人工校對回饋（2026-09-21，來源 2026-09-21-Us-site-training-2-20260723.ai-review）=====
+問柯舌=>問 Cursor
+Filebest=>Firebase
+給刻色=>給 Cursor
+5bis=>Firebase
+真實在=>正式站
+客實在=>測試站
+Filebase=>Firebase
+看課設=>看 Cursor
+真實賽=>正式站
+Gaveway=>Gateway
+昂度後=>undo後
+昂度會昂度=>undo會undo
+有昂度=>有undo
+剛剛夾=>剛剛加
+近褐色=>近 Cursor
+csetag=>csitech
+Fall Base=>Firebase
+Outload=>Upload
+上層到=>上傳到
+它科蛇=>它 Cursor
+都被提=>都被踢
+Jason Upload=>JSON Upload
+npm run deep test=>npm run dev:test
+nvm run div=>npm run dev
+funder好了=>Finder好了
+到funder=>到Finder
+funder就是mac=>Finder就是mac
+放到Disk=>放到 dist
+# nvm=>npm                 # 會把真的 nvm use 改掉
+# 你只查=>你只是            # 會誤傷「你只查 log／資料」
+# 資料下=>資料夾            # 會誤傷「資料下面」
+# 要看人=>要看遠            # 從「人端→遠端」截斷，會改壞「要看人」
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:00:36  Jason=>JSON
+# 00:16:45  deep=>dev:
+# 00:17:03  div=>dev
+# 00:19:40  funder=>Finder
+# 00:19:42  funder=>Finder
+# 00:19:44  funder=>Finder
+# 00:43:35  Jason=>JSON
+# 00:50:56  Disk=>dist
+
+# ===== 人工校對回饋（2026-09-22，來源 2026-09-22-2026年9月22日-上午10-18.ai-review）=====
+到聲文=>到聲紋
+在講招=>在講話
+流水漲=>流水帳
+有竹子=>有逐字
+竹子稿=>逐字稿
+把竹子=>把逐字
+半時間=>辦事項
+看主治=>看逐字
+主治稿的地位=>逐字稿的段落
+主治稿分長=>逐字稿分章
+能主治=>能逐字
+是主治=>是逐字
+以主治=>以逐字
+她主治=>她逐字
+們開櫃=>們開會
+收寫做=>手寫做
+你寫收=>你寫手
+用褐色=>用 Cursor
+Cloud Co=>Claude Code
+褐色鞋=>Cursor 寫
+Cloud 鞋=>Claude 寫
+有余繪=>有與會
+主趣力=>正確率
+太融場=>太冗長
+進一間=>精簡
+種橡木=>種條列
+是教訓=>是教學
+WASHOW=>workshop
+麼競架=>麼計價
+很冷藏=>很冗長
+個組織=>個逐字
+蠻農場=>蠻冗長
+Warsha=>workshop
+主字搞聽不聽他=>逐字稿聽不懂他就
+
+# ===== 人工校對回饋（2026-09-22，來源 2026-09-22-2026年9月22日-上午10-18.ai-review）=====
+聲文比=>聲紋比
+費結束=>費才有
+是聲文=>是聲紋
+她當地=>她當下
+題手機=>題收集
+找學生=>找是
+自己採=>自己抽
+他的鞋=>他的寫
+是很結=>是很抓
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:07:31  Cloud=>Claude
+
+# ===== 人工校對回饋（2026-09-22，來源 2026-09-22-2026年9月22日-上午10-18.review）=====
+她留意=>她review
+些我想=>些workshop
+把它讀=>把它丟
+寫的話會=>議記錄
+不是一等公明=>看真的不知道一等功名
+沒必要選擇=>不是很美觀
+個也太高=>次教了什麼
+去寫作=>去寫出
+你看學人他在這裡=>還不如看sharon總結的勒
+超臭的=>超扯
+# --- 下面這幾筆是整句對上、抽出的片段太泛，全域替換會誤傷 ---
+# 譬如說=>例如說，欸
+# 我就把=>有一些就把
+# 論什麼=>論的時候
+# 也可能=>也可以看
+# 逐字稿=>逐字稿那一段
+# 什麼話=>什麼碗糕
+# 這樣有=>這邊用
+# 要一直=>要也是都
+# 第一輪第二輪=>或是我重看影片
+# 去這裡=>去自己
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:00:20  Alan=>Allen
+
+# ===== 人工校對回饋（2026-09-23，來源 2026-09-23-0724-meetin-Allen.ai-review）=====
+SHIT=>sheet
+,就是SHIT=>，就是 sheet
+shitter=>sheet
+UiU=>UI
+按攝取=>按 search
+botter=>button
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:19:49  INFLATION=>Inspection
+# 00:24:27  Raw=>Rhode
+
+# ===== 人工校對回饋（2026-09-23，來源 2026-09-23-2026年9月4日-上午10-25.ai-review）=====
+RequiREADMEnt=>Requirement
+# 會重新明明=>位重新命名  # 片段切太短，會誤傷
+GYD=>GUID
+Vigma=>Figma
+
+# ===== 人工校對回饋（2026-09-23，來源 2026-09-23-2026年9月4日-上午10-25.ai-review）=====
+底Sale=>Excel
+esale=>Excel
+requiREADMEnts=>requirements
+是廣字=>是廣誌
+洞材=>動態
+
+# ===== 人工校對回饋（2026-09-23，來源 2026-09-23-Antigravity導入與實作分享.ai-review）=====
+deckoverflow=>Stack Overflow
+TrapGPT=>ChatGPT
+Antiguity=>Antigravity
+Antiquivity=>Antigravity
+GPTOS=>GPT-OSS
+mcp7=>MCP server
+Kerter=>Cursor
+Rot檔=>Flutter 專
+NVVN=>MVVM
+GVM=>Gemini
+Degravity=>Antigravity
+mcp=>MCP
+NCP=>MCP
+villcome=>Welcome
+OpenCloud=>OpenClaw
+MVM,=>MVVM，
+Anticravity=>Antigravity
+antigrivity=>Antigravity
+GMI3.1 Pro=>Gemini 3.1 Pro
+GMI=>Gemini
+的入羅=>的 Rules
+個入羅=>個 Rules
+是入羅=>是 Rules
+你扛密=>你 commit
+是城市=>是程式
+# --- 下面這幾筆全域替換會誤傷（錯詞側太短，或本身是真正的英文單字）---
+# --- 想啟用請自己補上下文，例如把 abc=>xyz 改成 「的abc」=>「的xyz」 ---
+# 00:06:22  Joey=>Joyie
+# 00:28:54  Adrian=>Agent-
+# 00:29:20  Front=>Prompt
+# 00:33:50  Cloud=>Claude
+# 00:41:55  Front=>Prompt
+# 00:58:42  Ross=>Rules
+# 01:08:31  German=>Gemini
+# 01:13:49  commentation=>conversation
