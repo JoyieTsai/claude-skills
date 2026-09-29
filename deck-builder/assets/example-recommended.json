@@ -4,7 +4,7 @@
   "audience": "internal",
   "title": "推薦樣式測試",
   "slides": [
-    {"layout": "title", "title": "Genie 2026 設計審核", "subtitle": "無障礙與可用性稽核", "notes": "開場"},
+    {"layout": "cover", "title": "Genie 2026 設計審核", "subtitle": "無障礙與可用性稽核", "notes": "開場"},
     {"layout": "section", "title": "一、問題總覽", "notes": "分段"},
     {"layout": "content", "title": "兩個 P0 都與色彩對比有關",
      "bullets": ["灰階文字 5 個色階不符 AA", "停用按鈕僅 1.90:1", "  兩者皆為 token 層級改動"], "notes": "重點"},

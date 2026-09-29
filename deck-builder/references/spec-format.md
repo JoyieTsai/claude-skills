@@ -9,7 +9,7 @@
 
 ```json
 {
-  "style": "company",
+  "style": "csi",
   "language": "zh-TW",
   "audience": "internal",
   "title": "Genie 2026 設計審核結果",
@@ -63,8 +63,8 @@
 
 | Key | 必填 | 說明 |
 |---|---|---|
-| `template` | `custom` 必填 | 來源 `.pptx`／`.potx` 的絕對路徑。`company` 風格省略時依序解析 `DECK_BUILDER_TEMPLATE` → `config.json` → 內建的 `assets/company-template.pptx`（見 SKILL.md 的「設定」） |
-| `style` | 是 | `company` \| `recommended` \| `custom` |
+| `template` | `custom` 必填；`csi`／`csitw` 可省略 | 來源 `.pptx`／`.potx` 的絕對路徑。省略時依實體解析：env（`DECK_BUILDER_CSI_TEMPLATE`／`DECK_BUILDER_CSITW_TEMPLATE`）→ `config.json`（`csi_template`／`csitw_template`；舊鍵 `company_template`→CSI）→ 內建 `assets/company-template.pptx` 或 `assets/csitw-template.pptx` |
+| `style` | 是 | `csi` \| `csitw` \| `company`（=csi 舊名）\| `recommended` \| `custom` |
 | `language` | 是 | `zh-TW` \| `en` \| `mixed`——決定 CJK 的 `a:ea` 字體 |
 | `audience` | 否 | `external` \| `internal`——只寫進檔案內容屬性 |
 | `title` | 否 | 核心屬性的標題 |
@@ -80,18 +80,22 @@
 
 | Key | 型別 | 說明 |
 |---|---|---|
-| `layout` | string \| int | 版面**名稱**（建議）或索引。名稱比對不分大小寫；未知名稱 → 報錯並列出有效名稱，絕不無聲 fallback |
+| `layout` | string \| int | 版面**名稱**（建議）或索引。名稱比對不分大小寫；未知名稱 → 報錯並列出有效名稱，絕不無聲 fallback。可加冒號 variant：`"image:left"`、`"cards:icon"`、`"cards:3-col"`（見 `layouts.md`） |
 | `title` | string | 填入 TITLE／CENTER_TITLE |
-| `subtitle` | string | 版面有 SUBTITLE 時填入。推薦風格中也用作 `quote` 的出處行 |
+| `subtitle` | string | 版面有 SUBTITLE 時填入。推薦風格中也用作 `quote` 的出處行、`statement` 的 supporting text、以及 `content:editorial`／`spotlight`／`data-story` 的主文／insight |
+| `eyebrow` | string | **僅 `statement`。** 小型分類／context label |
 | `bullets` | string[] | 內文。前置 `"  "`（兩個空格）代表第二層項目 |
-| `paragraphs` | string[] | 同 `bullets` 但沒有項目符號——用於敘述文字 |
+| `paragraphs` | string[] | 同 `bullets` 但沒有項目符號——用於敘述文字。`statement` 未給 `subtitle` 時會取第一段當 supporting text |
 | `columns` | [string[], string[]] | **推薦風格，僅 `two-column`。** 兩組文字陣列 |
 | `image` | string | 絕對路徑；版面有 PICTURE placeholder 就放進去，否則自行擺放並縮放至適合 |
 | `caption` | string | **推薦風格，僅 `image-full`。** 圖片下方的來源／出處行 |
 | `table` | object | `{headers: [], rows: [[]]}`，可加 `col_widths` |
 | `chart` | object | **原生、可在 PowerPoint 編輯的圖表**（不是圖片）。欄位與選用準則見 `charts.md` |
+| `cards` | object[] | **卡片格**（圓角面板 + 可選 icon）。`[{title, body, icon?}]`，見 `cards.md`。與 bullets／table／chart／image 互斥；`content:diagram` 必填 |
 | `entries` | object[] | **僅 `Agenda` 版面。** `[{"title": …, "page": …}]`，用來取代自動產生的議程 |
+| `events` | object[] | **僅 `timeline` 版面。** `[{"label": …, "title": …, "body"?: …}]`，2–6 個事件 |
 | `keep_closing` | bool | **僅 `Thank you` 版面。** 設 `false` 才會讓這頁照 spec 產生內容；預設維持樣板原樣 |
+| `dark` | bool | 深底版面開關。`true` → 全版品牌藍背景＋白色文字。未填時 builder 依判斷自行混入；frontmatter 的 `dark: false` 或 `dark: true` 設全局預設，每頁可覆寫 |
 | `notes` | string | 講者備註。務必寫——論述就活在這裡 |
 
 `bullets`／`paragraphs`／`table`／`chart` 每頁只能選一個，**唯一例外是 `chart` 可以和
@@ -100,9 +104,32 @@
 
 ## `style: "recommended"` 的版面名稱
 
-`title`、`section`、`content`、`two-column`、`image-right`、`image-full`、`table`、
-`chart`、`chart-right`、`quote`、`closing`。未知名稱會以 `content` 呈現並警告（與樣板風格不同——在樣板風格下，
-未知版面是硬錯誤，因為在那裡猜錯會無聲套上錯誤的 master 樣式）。
+基礎版面：`title`、`section`、`content`、`two-column`、`image-full`、`table`、`chart`、`chart-right`、`quote`、`statement`、`big_number`、`timeline`、`closing`。
+
+Variant 版面（冒號語法）：
+
+| 值 | 說明 |
+|---|---|
+| `content:standard` | 一般內容（未指定 variant 時的預設）。`bullets` 自動以品牌色左側 accent line 渲染為視覺清單；`paragraphs` 則為純文字流 |
+| `content:editorial` | 非對稱主文＋支援（`subtitle`／首行＝主文） |
+| `content:spotlight` | 單一焦點句置中 |
+| `content:diagram` | hub-and-spoke（必填 `cards`；`cards[0]`＝hub） |
+| `content:data-story` | 圖表敘事（必填 `chart`；左側 insight） |
+| `image` / `image:right` | 文左圖右（預設；圖約 65%） |
+| `image:left` | 圖左文右（圖約 65%） |
+| `image:top` | 圖上文下（圖佔約 52% 高度） |
+| `image:split` | 全版沉浸，無標題列 |
+| `cards:2-col` | 強制 2 欄網格 |
+| `cards:3-col` | 強制 3 欄網格 |
+| `cards:4-grid` | 強制 2×2 方格 |
+| `cards:icon` | icon 置中於卡頂 |
+| `cards:number` | 大序號（01 02…）替代 icon |
+| `cards:image` | 圖片填滿卡頂（每張卡需 `image` 欄位） |
+| `cards:steps` | 直式序號清單（品牌色圓形數字 + 標題 + 說明），最多 8 項；適合流程、步驟 |
+| `cards:bento` | 非對稱：主卡 + 右側支援卡 |
+| `cards:featured` | 非對稱：通欄主卡 + 下方支援卡 |
+
+`image-right` 仍作為 `image:right` 的別名支援（向下相容）。未知名稱會以 `content` 呈現並警告（與樣板風格不同——在樣板風格下，未知版面是硬錯誤）。
 
 ## 腳本會強制執行的規則
 

@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """Check a generated deck for the things that go wrong silently.
 
@@ -5,7 +6,9 @@
 
 Reports, per slide: missing title, empty placeholders, overflow risk, tiny or
 low-contrast text, off-brand colours, and unresolved [待補: …] / [TODO] markers.
-Package-level: duplicate zip entries, file size, orphaned slide parts.
+Package-level: duplicate zip entries, file size, orphaned slide parts, and
+missing layout media (brand logos / background images referenced by layouts
+but absent from the package — would cause blank logo areas in PowerPoint).
 
 This is the only check available — there's no LibreOffice in this environment, so the
 deck cannot be rendered to images for visual inspection. Read the output, fix what it
@@ -32,7 +35,11 @@ except ImportError:
 EMU_IN = 914400
 
 BRAND = {"0d63ba", "0b539d", "13182c", "e7e6e6", "b4b4b4", "3f3f3f",
-         "ffffff", "000000", "fcfcfc", "ff737f", "5a5f6e", "d8d8d8", "f4f6f9"}
+         "ffffff", "000000", "fcfcfc", "ff737f", "5a5f6e", "d8d8d8", "f4f6f9",
+         # Card accent cycle (cards.py ACCENTS — green/teal are on-brand for card grids)
+         "009470", "439eb1",
+         # Recommended-style dark slide accents
+         "6ba5e0"}
 
 # The chart palette, validated with the dataviz validator against this template's
 # surfaces — see references/charts.md. Kept separate from BRAND because these are
@@ -351,6 +358,9 @@ def check_slide(i, slide, slide_h_in):
 
         if not shape.has_text_frame:
             continue
+        # Skip full-slide background rectangles (dark-slide fills, etc.)
+        if (shape.name or "").startswith("db:bg"):
+            continue
 
         tf = shape.text_frame
         full = tf.text
@@ -436,6 +446,21 @@ def main():
     if dupes:
         err(f"package has {len(dupes)} duplicate zip entries — slides were removed "
             "without drop_rel; rebuild")
+
+    # Verify every image referenced by a layout rel is actually in the package.
+    # Logo loss shows up here: if strip_template_slides incorrectly drops a media
+    # file that a layout depends on, this will catch it before anyone opens the file.
+    with zipfile.ZipFile(args.path) as z:
+        pkg_names = set(z.namelist())
+        for name in sorted(pkg_names):
+            if re.match(r"ppt/slideLayouts/_rels/slideLayout\d+\.xml\.rels$", name):
+                content = z.read(name).decode()
+                for target in re.findall(r'Target="\.\./media/([^"]+)"', content):
+                    media_path = f"ppt/media/{target}"
+                    if media_path not in pkg_names:
+                        lay_num = re.search(r"slideLayout(\d+)", name).group(1)
+                        err(f"layout {lay_num}: referenced image '{target}' is missing "
+                            "from the package — brand logo or background may be lost")
 
     prs = Presentation(args.path)
     slide_h_in = prs.slide_height / EMU_IN

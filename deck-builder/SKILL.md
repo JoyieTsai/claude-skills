@@ -1,6 +1,6 @@
 ---
 name: deck-builder
-description: 產出可編輯的 .pptx 簡報。會先詢問對象（對外／對內）與風格（公司樣板／系統推薦／使用者提供的樣板），起草逐頁大綱並取得確認後才產生檔案。在被要求「做一份簡報」、「做 PPT」、「build a deck」、「make slides」、「整理成簡報」、「提案簡報」、「報告簡報」，或要把文件／稽核報告／規格轉成簡報時使用。
+description: 產出可編輯的 .pptx 簡報。會先詢問對象（對外／對內）與風格（CSI 樣板／CSITW 樣板／系統推薦／使用者提供的樣板），起草逐頁大綱並取得確認後才產生檔案。在被要求「做一份簡報」、「做 PPT」、「build a deck」、「make slides」、「整理成簡報」、「提案簡報」、「報告簡報」，或要把文件／稽核報告／規格轉成簡報時使用。
 ---
 
 # 簡報產生器
@@ -30,17 +30,20 @@ description: 產出可編輯的 .pptx 簡報。會先詢問對象（對外／對
 
 ### Q2 · 風格——用哪一套視覺系統？
 
-只提供這三個選項：
+只提供這**四**個選項（一次選實體＋視覺系統）：
 
-1. **公司樣板**（對象為外部時建議這個）——真正的 master 繼承。**樣板已內建在 `assets/company-template.pptx`，不需設定即可使用**（要換成別的版本見下方「設定」）。其已驗證的版面與色票見 `references/company-template.md`。
-2. **系統推薦**——以公司主色 `#0d63ba` 為基礎，但版面更簡潔密實。當公司樣板的公共安全框架與主題不符，或是內部快速簡報時使用。見 `references/recommended-style.md`。
-3. **使用者提供的樣板**——問對方 `.pptx`／`.potx` 的路徑，先對它跑 `scripts/inspect_template.py`，把版面、色票與字體報告給對方看，再開始做。使用 `style: "custom"`，`template` 設為他們的路徑。
+1. **CSI 樣板**（美國／全球；對象為外部且品牌是 CSI 時建議）——真正的 master 繼承。**內建於 `assets/company-template.pptx`**。`style: "csi"`（舊名 `"company"` 仍可用）。版面見 `references/company-template.md`。
+2. **CSITW 樣板**（台灣實體；對內或台灣對外時建議）——真正的 master 繼承。**內建於 `assets/csitw-template.pptx`**。`style: "csitw"`。版面名稱與 CSI **不同**——見 `references/csitw-template.md`，大綱必須用 CSITW 的真實版面名。
+3. **系統推薦**——以公司主色 `#0d63ba` 為基礎，版面更簡潔密實。當兩份公司樣板的公共安全框架與主題不符，或需要 CSI／CSITW 都沒有的構圖時使用。見 `references/recommended-style.md`。`style: "recommended"`。
+4. **使用者提供的樣板**——問對方 `.pptx`／`.potx` 的路徑，先對它跑 `scripts/inspect_template.py`，把版面、色票與字體報告給對方看，再開始做。`style: "custom"`，`template` 設為他們的路徑。
 
-若對方選了公司樣板但主題與公共安全無關，用一句話說明並建議選項 2——之後仍照他們的選擇進行。
+**預設提示（仍以使用者選擇為準）：** 對外＋全球／美國 → CSI；對內或台灣對外 → CSITW；主題與公共安全無關 → 建議系統推薦。
+
+若對方選了 CSI／CSITW 但主題與公共安全無關，用一句話說明並建議選項 3——之後仍照他們的選擇進行。
 
 ### Q3 · 語言
 
-每次都要問。公司樣板本身的 13 頁**全是英文**，所以用它做中文簡報會混排——內部使用通常沒問題，但要提一下。選項：繁體中文／English／中英混排（英文標題、中文內文）。
+每次都要問。CSI 樣板本身的 13 頁**全是英文**；CSITW 亦以英文版面為主、結尾有繁中地址——用它們做中文簡報會混排，內部通常沒問題，但要提一下。選項：繁體中文／English／中英混排（英文標題、中文內文）。
 
 **同一次呼叫中若尚未得知，也一併確認：**主題／素材來源、時長（決定頁數——每張內容頁約 **1.5–2 分鐘**），以及希望聽眾做出的那一個決定或行動。
 
@@ -48,15 +51,15 @@ description: 產出可編輯的 .pptx 簡報。會先詢問對象（對外／對
 
 ## 設定
 
-**公司樣板已內建在 `assets/company-template.pptx`，不需要任何設定。** clone 下來就能用
-`style: "company"`。
+**CSI 與 CSITW 樣板都已內建，不需要設定。** clone 下來就能用 `style: "csi"` 或
+`style: "csitw"`（舊的 `style: "company"` 等同 CSI）。
 
 解析順序（前面找到就用前面的）：
 
 1. spec 裡明寫的 `template`
-2. `DECK_BUILDER_TEMPLATE` 環境變數
-3. `<skill>/config.json`，內容為 `{"company_template": "/path/to/Template.pptx"}`
-4. 內建的 `assets/company-template.pptx`
+2. 環境變數：`DECK_BUILDER_CSI_TEMPLATE`／`DECK_BUILDER_CSITW_TEMPLATE`（舊的 `DECK_BUILDER_TEMPLATE` 只覆寫 CSI）
+3. `<skill>/config.json` 的 `csi_template`／`csitw_template`（舊鍵 `company_template` → CSI）
+4. 內建：`assets/company-template.pptx`（CSI）或 `assets/csitw-template.pptx`（CSITW）
 
 後兩者是給「公司發了新版樣板」或「要用另一份樣板」的情況。設了但檔案不存在會**直接報錯**，
 不會無聲改用內建的那份——否則你會拿到一份看起來成功、其實用舊樣板做的簡報。
@@ -90,6 +93,7 @@ spec 裡明寫的 `template` 一律優先，所以 `custom` 風格與一次性�
 只有在取得明確同意後，才進入步驟 4。
 
 大綱格式範本，以及敘事結構（SCR、問題—解法、時序）與如何選擇，見 `references/narrative.md`。
+每個版面的視覺線框、支援的欄位、以及選版面的決策指引，見 `references/layouts.md`。
 
 比其他規則更重要的幾條：
 - **標題要講重點，不是講題目。**「Q3 行動版流失率上升 4 個百分點」勝過「Q3 數據」。如果聽眾只讀標題，也應該能得到整個論述。
@@ -97,6 +101,7 @@ spec 裡明寫的 `template` 一律優先，所以 `custom` 風格與一次性�
 - **一頁一個想法。** 兩個想法就是兩頁。
 - **最多約 6 條要點，每條約 12 字。** 超過就是文件了——移到講者備註或附錄。
 - **數字的比較就畫圖表，不要用要點列。** 一組數字如果重點是「誰比誰大」、「怎麼變化」或「佔多少」，那要點列是在要求聽眾在腦裡畫圖。大綱裡就標 `[chart: 直向長條，強調 8/5]`，讓形式在確認階段就談定。圖表是**原生可編輯的**，不是圖片。反過來也要守：**一個數字就不要畫圖表**——放進標題，或當成大字。形式與色票的選用準則見 `references/charts.md`。
+- **並列的功能／方向用卡片格，不要塞成長要點。** 大綱標 `**卡片**` + JSON（見 `references/cards.md`）。一般 UI 用 Interface Icons（`ai`）；**CSI 產品／模組用 `csi:court` 等**（設計站 Iconography）。
 - **開場講他們為何該在意，結尾給具體的請求。**
 - **議程頁要列出所有段落大標與頁碼。** 大綱裡就要把段落分隔頁排好，議程才有東西可列。
 

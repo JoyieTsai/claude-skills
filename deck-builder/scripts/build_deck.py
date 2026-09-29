@@ -33,6 +33,8 @@ except ImportError:
     sys.exit("python-pptx is not installed. Run: pip3 install python-pptx")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import cards    # noqa: E402  -- card grid + Interface Icons; see references/cards.md
+import interface_icons  # noqa: E402  -- SVG raster for cover marks the template stores as SVG
 import charts   # noqa: E402  -- native pptx charts; see references/charts.md
 import md_to_spec   # noqa: E402  -- lets --spec take a .md outline directly
 
@@ -60,8 +62,10 @@ CJK_FONT   = "Microsoft JhengHei"
 
 EMU_PER_IN = 914400
 
-# Company template geometry (inches) -- from the master, see references/company-template.md
-BODY_BOX = (0.92, 1.60, 11.50, 4.80)
+# Company template geometry (inches). Title box ends near y=1.26; start the body
+# lower so the heading and the content are not stacked on each other.
+BODY_BOX = (0.92, 2.40, 11.50, 4.00)
+BODY_TOP = 2.40
 
 # Recommended-style grid (inches)
 R_MARGIN_L, R_MARGIN_T, R_WIDTH = 0.90, 0.55, 11.53
@@ -70,6 +74,54 @@ R_COL_W = 5.55
 R_COL2_X = 6.88
 
 WARNINGS = []
+
+# Layout name aliases so old names keep working.
+_LAYOUT_ALIASES = {
+    "image-right":  "image:right",
+    "image-left":   "image:left",
+    "image-full":   "image:full",
+    "chart-right":  "chart:right",
+    "big-number":   "big_number",
+}
+
+# Recommended-style dark palette (used when a slide has dark: true).
+R_DARK_BG   = PRIMARY          # #0d63ba fill
+R_DARK_TEXT = WHITE            # #ffffff
+R_DARK_TEXT2 = rgb("e7e6e6")  # light grey for sub-text
+R_DARK_BAR  = rgb("6ba5e0")   # lighter blue accent line
+
+
+def _split_kind(raw):
+    """Parse 'cards:icon' → ('cards', 'icon').  No colon → (kind, None).
+
+    Also resolves legacy aliases: 'image-right' → base='image', variant='right'.
+    """
+    k = raw.strip().lower()
+    k = _LAYOUT_ALIASES.get(k, k)
+    if ":" in k:
+        base, variant = k.split(":", 1)
+        return base.strip(), variant.strip()
+    return k, None
+
+
+_CARD_VARIANTS = frozenset({"2-col", "3-col", "4-grid", "2x2", "icon", "number", "image", "steps", "bento", "featured"})
+
+
+def _cards_variant_of(spec):
+    """Card grid/style variant for a slide.
+
+    Preferred: explicit `cards_variant` (needed on company/custom decks where
+    `layout` is a master name like Content_heading_simple). Fallback: parse
+    from layout when it is `cards:icon` / `cards:3-col` (recommended style).
+    """
+    explicit = spec.get("cards_variant")
+    if explicit:
+        v = str(explicit).strip().lower()
+        return v if v in _CARD_VARIANTS else explicit
+    _, from_layout = _split_kind(str(spec.get("layout", "")))
+    if from_layout in _CARD_VARIANTS:
+        return from_layout
+    return None
 
 
 def warn(msg):
@@ -149,6 +201,74 @@ def fill_text_frame(tf, lines, size, color, bullet_char=None,
                   size=sub_size if sub else size,
                   color=sub_color if sub else color,
                   bold=False if sub else bold)
+
+
+def add_visual_bullets(slide, lines, x, y, w, h, style_run_fn,
+                       color=None, sub_color=None, accent=None,
+                       latin=LATIN_FONT, cjk=CJK_FONT):
+    """Render bullet lines as accent-line visual items (Gamma-style).
+
+    Each main bullet gets a short colored left-edge bar and is its own textbox
+    so spacing and wrapping feel intentional.  Sub-items (two-space indent) are
+    rendered smaller and lighter with a dash instead of a bar.
+    """
+    from pptx.enum.shapes import MSO_SHAPE as _V_MSO
+
+    color     = color     or TEXT
+    sub_color = sub_color or TEXT_2
+    accent    = accent    or PRIMARY
+
+    BAR_W   = 0.030    # width of the accent bar
+    BAR_GAP = 0.14     # gap between bar and text
+    TEXT_X  = x + BAR_W + BAR_GAP
+    TEXT_W  = w - BAR_W - BAR_GAP
+    MAIN_SZ = 18
+    SUB_SZ  = 14
+    MAIN_H  = 0.48     # row height for a main bullet (holds ~1–2 lines)
+    SUB_H   = 0.32
+    ROW_GAP = 0.10     # gap between rows
+    SUB_IND = 0.22     # extra indent for sub-items
+
+    cur_y = y
+    bottom = y + h
+
+    for raw in lines:
+        is_sub = raw.startswith("  ")
+        text = raw.strip()
+        if not text:
+            continue
+
+        row_h = SUB_H if is_sub else MAIN_H
+        if cur_y + row_h > bottom + 0.20:   # +0.20 tolerance
+            break
+
+        if is_sub:
+            tb = slide.shapes.add_textbox(
+                Inches(TEXT_X + SUB_IND), Inches(cur_y),
+                Inches(TEXT_W - SUB_IND), Inches(SUB_H))
+            tb.text_frame.word_wrap = True
+            style_run_fn(tb.text_frame.paragraphs[0].add_run(),
+                         "– " + text, size=SUB_SZ, color=sub_color,
+                         font=latin, cjk=cjk)
+        else:
+            bar = slide.shapes.add_shape(
+                _V_MSO.RECTANGLE,
+                Inches(x), Inches(cur_y + 0.07),
+                Inches(BAR_W), Inches(0.26))
+            bar.fill.solid()
+            bar.fill.fore_color.rgb = accent
+            bar.line.fill.background()
+            bar.shadow.inherit = False
+
+            tb = slide.shapes.add_textbox(
+                Inches(TEXT_X), Inches(cur_y),
+                Inches(TEXT_W), Inches(MAIN_H))
+            tb.text_frame.word_wrap = True
+            style_run_fn(tb.text_frame.paragraphs[0].add_run(),
+                         text, size=MAIN_SZ, color=color,
+                         font=latin, cjk=cjk)
+
+        cur_y += row_h + ROW_GAP
 
 
 def est_lines(text, size_pt, width_in):
@@ -251,18 +371,25 @@ def check_content(idx, spec):
         warn(f"slide {idx}: contains an unresolved placeholder marker")
     # A chart beside bullets is the one legitimate pairing: the text states the "so
     # what" that a chart alone can't, and the chart is the evidence for it. The chart
-    # takes the right half, the text the left. Every other combination is two ideas on
-    # one slide.
-    keys = ("bullets", "paragraphs", "table", "chart")
+    # takes the right half, the text the left. Cards replace the whole body — they
+    # don't share the slide with bullets/table/chart/image. Every other combination
+    # is two ideas on one slide.
+    keys = ("bullets", "paragraphs", "table", "chart", "cards")
     n = sum(1 for k in keys if spec.get(k))
     text_plus_chart = (n == 2 and spec.get("chart") and not spec.get("table")
-                       and not spec.get("image"))
+                       and not spec.get("image") and not spec.get("cards"))
     if n > 1 and not text_plus_chart:
         die(f"slide {idx}: use only one of {' / '.join(keys)} — a chart may share a "
             "slide with bullets, but nothing else may")
     img = spec.get("image")
     if img and not os.path.isfile(img):
         die(f"slide {idx}: image not found: {img}")
+    if spec.get("cards"):
+        if img:
+            die(f"slide {idx}: cards and an image compete for the same body area — "
+                "use one")
+        card_variant = _cards_variant_of(spec)
+        cards.check_cards(idx, spec["cards"], warn, die, variant=card_variant)
     if spec.get("chart"):
         if img:
             die(f"slide {idx}: a chart and an image compete for the same body area — "
@@ -369,6 +496,125 @@ def place_image(slide, path, x, y, max_w, max_h):
 
 
 # ================================================================ company / custom
+
+def _center_cover_text(ph):
+    """Cover title/subtitle: centered in the box, horizontally and vertically."""
+    tf = ph.text_frame
+    body = tf._txBody.find(qn("a:bodyPr"))
+    if body is not None:
+        body.set("anchor", "ctr")
+    for para in tf.paragraphs:
+        para.alignment = PP_ALIGN.CENTER
+
+
+def _add_centered_title(slide, title, color, size=32):
+    """Section-divider title: centered on the 13.33×7.5 canvas, text centered."""
+    box_h = 1.20
+    top = (7.50 - box_h) / 2
+    tb = slide.shapes.add_textbox(Inches(0.92), Inches(top), Inches(11.50), Inches(box_h))
+    tf = tb.text_frame
+    tf.word_wrap = False
+    body = tf._txBody.find(qn("a:bodyPr"))
+    if body is not None:
+        body.set("anchor", "ctr")
+    para = tf.paragraphs[0]
+    para.alignment = PP_ALIGN.CENTER
+    style_run(para.add_run(), title, size=size, color=color, bold=True)
+    return tb
+
+
+_SVG_BLIP = "{http://schemas.microsoft.com/office/drawing/2016/SVG/main}svgBlip"
+_R_EMBED = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
+_REL_IMAGE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+_COVER_LAYOUTS = ("title", "cover")
+COVER_TITLE_PT = 48
+
+
+def _grab_cover_pictures(prs):
+    """Slide-only pictures on Title / Cover (the brand logo lives here, not on the layout).
+
+    CSITW's logo is an SVG on the example Title slide. strip_slides drops that slide,
+    so a new cover inherits the layout art but not the logo. Save the picture element
+    and its image part, then reattach them on each new Title/Cover slide.
+    """
+    import copy
+    result = {}
+    for slide in prs.slides:
+        ln = (slide.slide_layout.name or "").strip().lower()
+        if ln not in _COVER_LAYOUTS:
+            continue
+        pics = []
+        for el in list(slide._element.spTree):
+            if el.tag != qn("p:pic"):
+                continue
+            svg = el.find(".//" + _SVG_BLIP)
+            blip = el.find(".//" + qn("a:blip"))
+            node = svg if svg is not None and svg.get(_R_EMBED) else blip
+            if node is None or not node.get(_R_EMBED):
+                continue
+            pics.append((copy.deepcopy(el), slide.part.related_part(node.get(_R_EMBED)),
+                         svg is not None and svg.get(_R_EMBED)))
+        if pics:
+            result[ln] = pics
+    return result
+
+
+def _inject_cover_pictures(slide, saved, layout_name):
+    key = (layout_name or "").strip().lower()
+    for i, (el, img_part, is_svg) in enumerate(saved.get(key, [])):
+        new_rid = slide.part.relate_to(img_part, _REL_IMAGE)
+        node = el.find(".//" + _SVG_BLIP) if is_svg else el.find(".//" + qn("a:blip"))
+        if node is not None:
+            node.set(_R_EMBED, new_rid)
+        c_nv = el.find(".//" + qn("p:cNvPr"))
+        if c_nv is not None:
+            c_nv.set("id", str(80 + i))
+        slide._element.spTree.append(el)
+
+
+def _grab_closing_shapes(prs):
+    """Before stripping: save all text sp elements from each closing slide.
+
+    Closing layouts (e.g. "Thank you") typically define NO placeholders in the
+    layout XML, so the "THANK YOU" heading is a slide-only sp element. Saving
+    all text sp elements and appending them to the new slide's spTree restores it.
+
+    Returns {layout_name_lower: [lxml_element, ...]}
+    """
+    import copy
+    result = {}
+    for slide in prs.slides:
+        if not is_closing_layout(slide.slide_layout.name):
+            continue
+        ln = (slide.slide_layout.name or "").strip().lower()
+        # Count layout-defined placeholders — if zero, it's safe to re-inject ph elements.
+        layout_phs = {
+            int(ph.get("idx", "0"))
+            for ph in slide.slide_layout._element.spTree.findall(
+                ".//" + qn("p:ph"))
+        }
+        shapes = []
+        for el in slide._element.spTree:
+            if el.tag != qn("p:sp"):
+                continue
+            if not el.findall(".//" + qn("a:t")):
+                continue
+            ph_el = el.find(".//" + qn("p:ph"))
+            if ph_el is not None:
+                idx = int(ph_el.get("idx", "0"))
+                if idx in layout_phs:
+                    continue  # layout already provides this placeholder
+            shapes.append(copy.deepcopy(el))
+        if shapes:
+            result[ln] = shapes
+    return result
+
+
+def _inject_closing_shapes(slide, saved, layout_name):
+    key = (layout_name or "").strip().lower()
+    for el in saved.get(key, []):
+        slide._element.spTree.append(el)
+
 
 def strip_slides(prs):
     """Remove the template's own slides, keeping master, layouts and theme.
@@ -515,28 +761,71 @@ def resolve_layout(prs, ref, idx, redirect=None):
              'background art specifically, set "collapse_layouts": false in the spec.')
         want = canon.strip().lower()
 
-    for lay in layouts:
-        if lay.name.strip().lower() == want:
-            return lay
+    # Spec always names the cover `Cover`. CSITW's template file still labels that
+    # layout "Title" (CSI uses "Title" for section dividers) — map Cover → Title
+    # only when the template has no layout named Cover.
+    names_lower = {lay.name.strip().lower(): lay for lay in layouts}
+    if want == "cover" and "cover" not in names_lower and "title" in names_lower:
+        warn(f"slide {idx}: this template names its cover layout 'Title' — using that "
+             f"for spec layout 'Cover'. Prefer writing Cover in outlines so it is not "
+             f"confused with CSI's Title section divider.")
+        return names_lower["title"]
+
+    if want in names_lower:
+        return names_lower[want]
     names = "\n  ".join(f"[{i}] {l.name}" for i, l in enumerate(layouts))
     die(f"slide {idx}: no layout named {ref!r}. Available:\n  {names}")
 
 
-def set_ph_text(ph, text, cjk=None):
+_ALIGN = {
+    "ctr": PP_ALIGN.CENTER,
+    "l": PP_ALIGN.LEFT,
+    "r": PP_ALIGN.RIGHT,
+    "just": PP_ALIGN.JUSTIFY,
+    "dist": PP_ALIGN.JUSTIFY,
+}
+
+
+def set_ph_text(ph, text, cjk=None, align=None, anchor=None):
     """Fill a placeholder, keeping the layout/master's inherited styling.
 
     Deliberately does not touch size or colour — that's the whole point of using the
     template's placeholders. But both typefaces are set explicitly: the company master's
     titleStyle specifies Open Sans for a:ea, which is a latin-only face, so Chinese in a
     title would fall through to a renderer default.
+
+    `align` / `anchor` are written onto the paragraph and bodyPr. python-pptx's
+    text_frame.clear() drops the layout's algn, so a centred cover title would
+    otherwise come out left-aligned.
     """
     tf = ph.text_frame
     tf.clear()
-    run = tf.paragraphs[0].add_run()
+    para = tf.paragraphs[0]
+    if align in _ALIGN:
+        para.alignment = _ALIGN[align]
+    if anchor:
+        body = tf._txBody.find(qn("a:bodyPr"))
+        if body is not None:
+            body.set("anchor", anchor)
+    run = para.add_run()
     run.text = text
     run.font.name = LATIN_FONT
     _set_cjk(run, cjk)
     return run
+
+
+def _layout_align(layout, ph):
+    """(algn, anchor) from the matching layout placeholder, if it states them."""
+    idx = ph.placeholder_format.idx
+    for src in layout.placeholders:
+        if src.placeholder_format.idx != idx:
+            continue
+        xml = src._element.xml
+        algn = re.search(r'\balgn="([^"]+)"', xml)
+        anchor = re.search(r'\banchor="([^"]+)"', xml)
+        return (algn.group(1) if algn else None,
+                anchor.group(1) if anchor else None)
+    return None, None
 
 
 def drop_empty_placeholders(slide):
@@ -585,7 +874,23 @@ def ph_by_type(slide, *types):
 AGENDA_NAMES = ("agenda", "contents", "table of contents", "目錄")
 
 # Layouts that mark the start of a section, so they're what an agenda lists.
-SECTION_LAYOUTS = ("title", "headings_custom photo", "headings_img", "section")
+_SECTION_EXACT = frozenset((
+    "title",                 # CSI section divider
+    "headings_custom photo",
+    "headings_img",
+    "headings_simple",       # CSITW default section divider
+    "project plan",          # CSITW alternate section divider
+    "section",               # recommended style
+))
+
+
+def _is_section_layout(name):
+    low = (name or "").strip().lower()
+    if low in _SECTION_EXACT:
+        return True
+    # Any layout whose name starts with "heading(s)_" follows the section-divider
+    # convention used by many custom templates (e.g. "Headings_simple").
+    return bool(re.match(r"headings?[_\s]", low))
 
 
 def is_agenda_layout(name):
@@ -616,8 +921,7 @@ def agenda_entries(spec_slides, agenda_idx):
                 out.append((s["title"], n))
         return out
 
-    entries = collect(
-        lambda s: str(s.get("layout", "")).strip().lower() in SECTION_LAYOUTS)
+    entries = collect(lambda s: _is_section_layout(str(s.get("layout", ""))))
     if not entries:
         entries = collect(
             lambda s: not is_closing_layout(str(s.get("layout", "")))
@@ -740,7 +1044,8 @@ def keep_closing_as_is(slide, layout, spec_slide, idx):
 def build_from_template(spec, out):
     tpl = spec.get("template")
     if not tpl:
-        die("style 'company'/'custom' requires spec['template']")
+        die("style 'csi'/'csitw'/'company'/'custom' requires spec['template'] "
+            "(resolve_template should have filled it for csi/csitw)")
     if not os.path.isfile(tpl):
         die(f"template not found: {tpl}")
     if os.path.abspath(tpl) == os.path.abspath(out):
@@ -759,6 +1064,10 @@ def build_from_template(spec, out):
     if dark_layouts:
         print(f"  dark layouts (text flips to white): "
               + ", ".join(sorted(dark_layouts)))
+    # Save closing-slide text shapes before stripping — "Thank you" text lives on the
+    # template's example slide, not in the layout, so strip_slides would lose it.
+    _closing_shapes = _grab_closing_shapes(prs)
+    _cover_pics = _grab_cover_pictures(prs)
     strip_slides(prs)
 
     for i, s in enumerate(spec["slides"], 1):
@@ -769,6 +1078,7 @@ def build_from_template(spec, out):
         # The closing slide is the template author's, not the deck's — reproduce it as
         # drawn and move on, unless the spec explicitly asks to edit it.
         if keep_closing_as_is(slide, layout, s, i):
+            _inject_closing_shapes(slide, _closing_shapes, layout.name)
             add_notes(slide, s.get("notes"))
             continue
 
@@ -778,24 +1088,40 @@ def build_from_template(spec, out):
         body_color = WHITE if on_dark else TEXT
         sub_color = rgb("e7e6e6") if on_dark else TEXT_2
 
+        on_cover = (i == 1 and layout.name.strip().lower() in ("cover", "title"))
+        if on_cover and _cover_pics:
+            _inject_cover_pictures(slide, _cover_pics, layout.name)
+
         title = s.get("title")
         if title:
             ph = ph_by_type(slide, "CENTER_TITLE", "TITLE")
             if ph is not None:
                 check_headline(i, title, ph)
-                set_ph_text(ph, title)   # inherit the master's title styling
+                run = set_ph_text(ph, title)   # inherit the master's title styling
+                if on_cover:
+                    run.font.size = Pt(COVER_TITLE_PT)
+                    _center_cover_text(ph)
             else:
-                check_headline(i, title, width_in=11.50, size_pt=28.0)
-                tb = slide.shapes.add_textbox(Inches(0.92), Inches(0.50),
-                                              Inches(11.50), Inches(1.0))
-                style_run(tb.text_frame.paragraphs[0].add_run(), title,
-                          size=28, color=body_color, bold=True)
+                # Headings_* are section dividers with no TITLE placeholder.
+                # The title sits in the middle of the canvas, text centered.
+                on_section = layout.name.strip().lower().startswith("headings")
+                size_pt = 32.0 if on_section else 28.0
+                check_headline(i, title, width_in=11.50, size_pt=size_pt)
+                if on_section:
+                    _add_centered_title(slide, title, body_color, size=size_pt)
+                else:
+                    tb = slide.shapes.add_textbox(Inches(0.92), Inches(0.50),
+                                                  Inches(11.50), Inches(1.0))
+                    style_run(tb.text_frame.paragraphs[0].add_run(), title,
+                              size=28, color=body_color, bold=True)
 
         sub = s.get("subtitle")
         if sub:
             ph = ph_by_type(slide, "SUBTITLE")
             if ph is not None:
                 set_ph_text(ph, sub)
+                if on_cover:
+                    _center_cover_text(ph)
             else:
                 warn(f"slide {i}: layout '{layout.name}' has no subtitle placeholder "
                      "— subtitle rendered as a textbox")
@@ -818,6 +1144,16 @@ def build_from_template(spec, out):
 
         lines = s.get("bullets") or s.get("paragraphs")
         img = s.get("image")
+
+        if s.get("cards"):
+            # Cards own the body area on title-only (and content) layouts.
+            cards.add_cards(slide, s["cards"], BODY_BOX, style_run,
+                            variant=_cards_variant_of(s),
+                            latin=LATIN_FONT, cjk=CJK_FONT)
+            drop_empty_placeholders(slide)
+            add_notes(slide, s.get("notes"))
+            continue
+
         if lines:
             bullet = "•" if s.get("bullets") else None
             # BODY first: on layouts 21–23 the OBJECT placeholder is the image slot,
@@ -841,20 +1177,25 @@ def build_from_template(spec, out):
                 x, y, w, h = BODY_BOX
                 if img or s.get("chart"):
                     w = 6.10
-                tb = slide.shapes.add_textbox(Inches(x), Inches(y),
-                                              Inches(w), Inches(h))
-                fill_text_frame(tb.text_frame, lines, size=20, color=body_color,
-                                bullet_char=bullet, space_after=14)
+                if s.get("bullets") and not img and not s.get("chart"):
+                    add_visual_bullets(slide, lines, x, y, w, h, style_run,
+                                       color=body_color, sub_color=sub_color,
+                                       latin=LATIN_FONT, cjk=CJK_FONT)
+                else:
+                    tb = slide.shapes.add_textbox(Inches(x), Inches(y),
+                                                  Inches(w), Inches(h))
+                    fill_text_frame(tb.text_frame, lines, size=20, color=body_color,
+                                    bullet_char=bullet, space_after=14)
 
         if s.get("table"):
-            add_table(slide, s["table"], 0.92, 1.70, 11.50,
-                      min(0.45 * (len(s["table"].get("rows", [])) + 1), 4.9))
+            add_table(slide, s["table"], 0.92, BODY_TOP, 11.50,
+                      min(0.45 * (len(s["table"].get("rows", [])) + 1), 4.35))
 
         if s.get("chart"):
             # With bullets beside it the chart takes the right half, matching how an
             # image shares the slide — the text carries the "so what", the chart the
             # evidence.
-            box = ((7.10, 1.70, 5.30, 4.75) if lines else (0.92, 1.70, 11.50, 4.75))
+            box = ((7.10, BODY_TOP, 5.30, 4.20) if lines else (0.92, BODY_TOP, 11.50, 4.20))
             if on_dark:
                 warn(f"slide {i}: a chart on the dark layout '{layout.name}' — the "
                      "palette is validated against white, and on the navy background "
@@ -868,9 +1209,9 @@ def build_from_template(spec, out):
             if pic_ph is not None:
                 pic_ph.insert_picture(img)
             elif lines:
-                place_image(slide, img, 7.20, 1.70, 5.20, 4.60)
+                place_image(slide, img, 7.20, BODY_TOP, 5.20, 4.20)
             else:
-                place_image(slide, img, 0.92, 1.70, 11.50, 4.90)
+                place_image(slide, img, 0.92, BODY_TOP, 11.50, 4.20)
 
         drop_empty_placeholders(slide)
         add_notes(slide, s.get("notes"))
@@ -880,7 +1221,9 @@ def build_from_template(spec, out):
 
 # ================================================================ recommended
 
-def r_headline(slide, text, rule=True, idx=None):
+def r_headline(slide, text, rule=True, idx=None, text_color=None, bar_color=None):
+    text_color = text_color or TEXT
+    bar_color = bar_color or PRIMARY
     tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_MARGIN_T),
                                   Inches(R_WIDTH), Inches(0.90))
     tf = tb.text_frame
@@ -888,24 +1231,24 @@ def r_headline(slide, text, rule=True, idx=None):
     tb.name = "db:headline"
     if idx is not None:
         check_headline(idx, text, width_in=R_WIDTH, size_pt=28.0)
-    style_run(tf.paragraphs[0].add_run(), text, size=28, color=TEXT, bold=True)
+    style_run(tf.paragraphs[0].add_run(), text, size=28, color=text_color, bold=True)
     if rule:
         from pptx.enum.shapes import MSO_SHAPE
         bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(R_MARGIN_L),
                                      Inches(1.52), Inches(2.2), Pt(3))
         bar.fill.solid()
-        bar.fill.fore_color.rgb = PRIMARY
+        bar.fill.fore_color.rgb = bar_color
         bar.line.fill.background()
         bar.shadow.inherit = False
 
 
-def r_slide_number(slide, n):
+def r_slide_number(slide, n, color=None):
     tb = slide.shapes.add_textbox(Inches(12.10), Inches(6.90),
                                   Inches(0.60), Inches(0.30))
     tb.name = "db:label"
     p = tb.text_frame.paragraphs[0]
     p.alignment = PP_ALIGN.RIGHT
-    style_run(p.add_run(), str(n), size=11, color=TEXT_2)
+    style_run(p.add_run(), str(n), size=11, color=color or TEXT_2)
 
 
 def build_recommended(spec, out):
@@ -916,24 +1259,48 @@ def build_recommended(spec, out):
 
     for i, s in enumerate(spec["slides"], 1):
         check_content(i, s)
-        kind = str(s.get("layout", "content")).strip().lower()
+        base, variant = _split_kind(str(s.get("layout", "content")))
+        kind = base  # kept for clarity in the branches below
         slide = prs.slides.add_slide(blank)
         lines = s.get("bullets") or s.get("paragraphs")
         bullet = "•" if s.get("bullets") else None
 
-        if kind == "title":
+        # Dark-slide background (recommended style only; company template uses
+        # its own dark layouts instead).  The background rect is pushed to index 2 in
+        # spTree so it sits behind every shape the branches below draw.
+        on_dark = s.get("dark", False)
+        if on_dark:
+            from pptx.enum.shapes import MSO_SHAPE as _MSO
+            _bg = slide.shapes.add_shape(
+                _MSO.RECTANGLE, Emu(0), Emu(0), prs.slide_width, prs.slide_height)
+            _bg.name = "db:bg"
+            _bg.fill.solid()
+            _bg.fill.fore_color.rgb = R_DARK_BG
+            _bg.line.fill.background()
+            _bg.shadow.inherit = False
+            _e = _bg._element
+            _e.getparent().remove(_e)
+            slide._element.spTree.insert(2, _e)
+        # Color tokens — override to white on dark slides
+        _txt  = R_DARK_TEXT  if on_dark else TEXT
+        _txt2 = R_DARK_TEXT2 if on_dark else TEXT_2
+        _bar  = R_DARK_BAR   if on_dark else PRIMARY
+
+        if kind in ("cover", "title"):
+            # `cover` is the canonical name; `title` remains a legacy alias for the
+            # recommended-style cover (CSI/CSITW use Title for section dividers).
             tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(2.55),
                                           Inches(R_WIDTH), Inches(1.20))
             tb.name = "db:headline"
             p = tb.text_frame.paragraphs[0]
             p.alignment = PP_ALIGN.CENTER
-            style_run(p.add_run(), s.get("title", ""), size=40, color=TEXT, bold=True)
+            style_run(p.add_run(), s.get("title", ""), size=40, color=_txt, bold=True)
             if s.get("subtitle"):
                 from pptx.enum.shapes import MSO_SHAPE
                 bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(6.07),
                                              Inches(3.95), Inches(1.2), Pt(3))
                 bar.fill.solid()
-                bar.fill.fore_color.rgb = PRIMARY
+                bar.fill.fore_color.rgb = _bar
                 bar.line.fill.background()
                 bar.shadow.inherit = False
                 tb2 = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(4.25),
@@ -941,14 +1308,43 @@ def build_recommended(spec, out):
                 tb2.name = "db:label"
                 p2 = tb2.text_frame.paragraphs[0]
                 p2.alignment = PP_ALIGN.CENTER
-                style_run(p2.add_run(), s["subtitle"], size=18, color=TEXT_2)
+                style_run(p2.add_run(), s["subtitle"], size=18, color=_txt2)
 
         elif kind == "section":
             tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(3.05),
                                           Inches(R_WIDTH), Inches(1.0))
             tb.name = "db:headline"
+            # Section label keeps brand blue even on dark (high-contrast accent).
             style_run(tb.text_frame.paragraphs[0].add_run(), s.get("title", ""),
                       size=32, color=PRIMARY, bold=True)
+
+        elif kind == "statement":
+            # Narrative pivot / high-impact conclusion. Intentionally open composition.
+            eyebrow = (s.get("eyebrow") or "").strip()
+            title_text = (s.get("title") or "").strip()
+            # Prefer subtitle; fall back to first paragraph so Markdown outlines work either way.
+            support = (s.get("subtitle") or "").strip()
+            if not support:
+                _paras = s.get("paragraphs") or []
+                if _paras:
+                    support = str(_paras[0]).strip()
+            if eyebrow:
+                tb_e = slide.shapes.add_textbox(Inches(1.15), Inches(1.55), Inches(4.0), Inches(0.35))
+                tb_e.name = "db:label"
+                style_run(tb_e.text_frame.paragraphs[0].add_run(), eyebrow.upper(),
+                          size=12, color=_bar if not on_dark else _txt2, bold=True)
+            tb_s = slide.shapes.add_textbox(Inches(1.15), Inches(2.05), Inches(9.70), Inches(2.25))
+            tb_s.name = "db:headline"
+            tb_s.text_frame.word_wrap = True
+            style_run(tb_s.text_frame.paragraphs[0].add_run(), title_text,
+                      size=42, color=_txt, bold=True)
+            if support:
+                tb_sub = slide.shapes.add_textbox(Inches(7.25), Inches(4.70), Inches(4.70), Inches(1.0))
+                tb_sub.name = "db:body"
+                tb_sub.text_frame.word_wrap = True
+                style_run(tb_sub.text_frame.paragraphs[0].add_run(), support,
+                          size=16, color=_txt2)
+            r_slide_number(slide, i, color=_txt2)
 
         elif kind == "quote":
             tb = slide.shapes.add_textbox(Inches(1.60), Inches(2.60),
@@ -957,36 +1353,115 @@ def build_recommended(spec, out):
             tf.word_wrap = True
             p = tf.paragraphs[0]
             p.alignment = PP_ALIGN.CENTER
-            style_run(p.add_run(), s.get("title", ""), size=32, color=TEXT, bold=True)
+            style_run(p.add_run(), s.get("title", ""), size=32, color=_txt, bold=True)
             if s.get("subtitle"):
                 p2 = tf.add_paragraph()
                 p2.alignment = PP_ALIGN.CENTER
                 p2.space_before = Pt(18)
-                style_run(p2.add_run(), s["subtitle"], size=16, color=TEXT_2)
-            r_slide_number(slide, i)
+                style_run(p2.add_run(), s["subtitle"], size=16, color=_txt2)
+            r_slide_number(slide, i, color=_txt2)
 
         elif kind == "closing":
-            r_headline(slide, s.get("title", ""), idx=i)
+            r_headline(slide, s.get("title", ""), idx=i, text_color=_txt, bar_color=_bar)
             if lines:
                 tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y),
                                               Inches(R_WIDTH), Inches(R_BODY_H))
-                fill_text_frame(tb.text_frame, lines, size=18, color=TEXT,
-                                bullet_char=bullet, sub_color=TEXT_2)
-            r_slide_number(slide, i)
+                fill_text_frame(tb.text_frame, lines, size=18, color=_txt,
+                                bullet_char=bullet, sub_color=_txt2)
+            r_slide_number(slide, i, color=_txt2)
+
+        elif kind == "big_number":
+            # Large metric centered on slide — no headline bar; the number is the message.
+            from pptx.enum.shapes import MSO_SHAPE as _MSO2
+            num_text   = (s.get("title") or "").strip()
+            label_text = (s.get("subtitle") or "").strip()
+            paras      = lines or []
+            NUM_H, LABEL_H, PARA_H, GAP = 1.40, 0.50, 0.55, 0.20
+            total_h = (NUM_H
+                       + (GAP + LABEL_H if label_text else 0)
+                       + (GAP + PARA_H  if paras      else 0))
+            slide_h_in = prs.slide_height / EMU_PER_IN
+            top = (slide_h_in - total_h) / 2
+
+            tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(top),
+                                          Inches(R_WIDTH), Inches(NUM_H))
+            tb.name = "db:big-number"
+            _p = tb.text_frame.paragraphs[0]
+            _p.alignment = PP_ALIGN.CENTER
+            # On dark slides _bar (#6ba5e0) on #0d63ba is only 2.3:1; use white instead.
+            _num_color = _txt if on_dark else _bar
+            style_run(_p.add_run(), num_text, size=72, color=_num_color, bold=True,
+                      font=LATIN_FONT, cjk=CJK_FONT)
+
+            if label_text:
+                top += NUM_H + GAP
+                tb2 = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(top),
+                                               Inches(R_WIDTH), Inches(LABEL_H))
+                tb2.name = "db:label"
+                _p2 = tb2.text_frame.paragraphs[0]
+                _p2.alignment = PP_ALIGN.CENTER
+                style_run(_p2.add_run(), label_text, size=22, color=_txt2,
+                          font=LATIN_FONT, cjk=CJK_FONT)
+
+            if paras:
+                top += LABEL_H + GAP
+                tb3 = slide.shapes.add_textbox(Inches(2.50), Inches(top),
+                                               Inches(8.33), Inches(PARA_H))
+                tb3.name = "db:body"
+                tf3 = tb3.text_frame
+                tf3.word_wrap = True
+                _p3 = tf3.paragraphs[0]
+                _p3.alignment = PP_ALIGN.CENTER
+                style_run(_p3.add_run(), " · ".join(p.strip() for p in paras),
+                          size=16, color=_txt2, font=LATIN_FONT, cjk=CJK_FONT)
+
+            r_slide_number(slide, i, color=_txt2)
+
+        elif kind == "image" and variant == "split":
+            # Full-bleed split: image fills left half edge-to-edge, title+text on right.
+            # No header bar — title lives inside the right column.
+            if not s.get("image"):
+                die(f"slide {i}: layout 'image:split' needs an image")
+            from pptx.enum.shapes import MSO_SHAPE
+            SPLIT_IMG_W = 6.30
+            SPLIT_TX_X  = SPLIT_IMG_W + 0.35
+            SPLIT_TX_W  = 13.333 - SPLIT_TX_X - 0.50
+            place_image(slide, s["image"], 0, 0, SPLIT_IMG_W, 7.5)
+            title_text = s.get("title", "")
+            if title_text:
+                check_headline(i, title_text, width_in=SPLIT_TX_W, size_pt=28.0)
+                tb_t = slide.shapes.add_textbox(
+                    Inches(SPLIT_TX_X), Inches(1.50), Inches(SPLIT_TX_W), Inches(0.90))
+                tb_t.name = "db:headline"
+                tb_t.text_frame.word_wrap = True
+                style_run(tb_t.text_frame.paragraphs[0].add_run(), title_text,
+                          size=28, color=_txt, bold=True)
+                bar_s = slide.shapes.add_shape(
+                    MSO_SHAPE.RECTANGLE, Inches(SPLIT_TX_X), Inches(2.55),
+                    Inches(2.2), Pt(3))
+                bar_s.fill.solid()
+                bar_s.fill.fore_color.rgb = _bar
+                bar_s.line.fill.background()
+                bar_s.shadow.inherit = False
+            if lines:
+                tb = slide.shapes.add_textbox(
+                    Inches(SPLIT_TX_X), Inches(2.75), Inches(SPLIT_TX_W), Inches(3.80))
+                fill_text_frame(tb.text_frame, lines, size=18, color=_txt,
+                                bullet_char=bullet, sub_color=_txt2)
+            r_slide_number(slide, i, color=_txt2)
 
         else:
-            r_headline(slide, s.get("title", ""), idx=i)
+            r_headline(slide, s.get("title", ""), idx=i, text_color=_txt, bar_color=_bar)
 
             if kind == "two-column":
                 cols = s.get("columns") or []
                 if len(cols) != 2:
                     die(f"slide {i}: layout 'two-column' needs columns: [[..],[..]]")
-                for ci, (cx, col) in enumerate(((R_MARGIN_L, cols[0]),
-                                                (R_COL2_X, cols[1]))):
+                for cx, col in ((R_MARGIN_L, cols[0]), (R_COL2_X, cols[1])):
                     tb = slide.shapes.add_textbox(Inches(cx), Inches(R_BODY_Y),
                                                   Inches(R_COL_W), Inches(R_BODY_H))
-                    fill_text_frame(tb.text_frame, col, size=18, color=TEXT,
-                                    bullet_char="•", sub_color=TEXT_2)
+                    fill_text_frame(tb.text_frame, col, size=18, color=_txt,
+                                    bullet_char="•", sub_color=_txt2)
 
             elif kind == "table":
                 if not s.get("table"):
@@ -995,28 +1470,26 @@ def build_recommended(spec, out):
                 add_table(slide, s["table"], R_MARGIN_L, R_BODY_Y, R_WIDTH,
                           min(0.42 * nrows, R_BODY_H))
 
-            elif kind == "chart":
+            elif kind == "chart" and variant != "right":
                 if not s.get("chart"):
                     die(f"slide {i}: layout 'chart' needs a chart object")
                 add_chart_to_slide(slide, s["chart"], False, i,
-                                   box=(R_MARGIN_L, R_BODY_Y, R_WIDTH,
-                                        R_BODY_H - 0.15))
+                                   box=(R_MARGIN_L, R_BODY_Y, R_WIDTH, R_BODY_H - 0.15))
 
-            elif kind == "chart-right":
+            elif kind == "chart" and variant == "right":
                 if not s.get("chart"):
-                    die(f"slide {i}: layout 'chart-right' needs a chart object")
+                    die(f"slide {i}: layout 'chart:right' needs a chart object")
                 if lines:
                     tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y),
                                                   Inches(R_COL_W), Inches(R_BODY_H))
-                    fill_text_frame(tb.text_frame, lines, size=18, color=TEXT,
-                                    bullet_char=bullet, sub_color=TEXT_2)
+                    fill_text_frame(tb.text_frame, lines, size=18, color=_txt,
+                                    bullet_char=bullet, sub_color=_txt2)
                 add_chart_to_slide(slide, s["chart"], False, i,
-                                   box=(R_COL2_X, R_BODY_Y, R_COL_W,
-                                        R_BODY_H - 0.15))
+                                   box=(R_COL2_X, R_BODY_Y, R_COL_W, R_BODY_H - 0.15))
 
-            elif kind == "image-full":
+            elif kind == "image" and variant == "full":
                 if not s.get("image"):
-                    die(f"slide {i}: layout 'image-full' needs an image")
+                    die(f"slide {i}: layout 'image:full' needs an image")
                 place_image(slide, s["image"], R_MARGIN_L, R_BODY_Y,
                             R_WIDTH, R_BODY_H - 0.35)
                 if s.get("caption"):
@@ -1024,37 +1497,240 @@ def build_recommended(spec, out):
                                                   Inches(R_WIDTH), Inches(0.3))
                     tb.name = "db:label"
                     style_run(tb.text_frame.paragraphs[0].add_run(), s["caption"],
-                              size=12, color=TEXT_2)
+                              size=12, color=_txt2)
 
-            elif kind == "image-right":
-                if not s.get("image"):
-                    die(f"slide {i}: layout 'image-right' needs an image")
+            elif kind == "image" and variant in ("right", None) and s.get("image"):
+                # Product/editorial default: image leads at ~65%, text supports at ~35%.
+                text_w, gap = 3.75, 0.35
+                img_x = R_MARGIN_L + text_w + gap
+                img_w = R_WIDTH - text_w - gap
                 if lines:
                     tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y),
-                                                  Inches(R_COL_W), Inches(R_BODY_H))
-                    fill_text_frame(tb.text_frame, lines, size=18, color=TEXT,
-                                    bullet_char=bullet, sub_color=TEXT_2)
-                place_image(slide, s["image"], R_COL2_X, R_BODY_Y,
-                            R_COL_W, R_BODY_H)
+                                                  Inches(text_w), Inches(R_BODY_H))
+                    fill_text_frame(tb.text_frame, lines, size=18, color=_txt,
+                                    bullet_char=bullet, sub_color=_txt2)
+                place_image(slide, s["image"], img_x, R_BODY_Y, img_w, R_BODY_H)
 
-            else:  # content
-                if kind != "content":
+            elif kind == "image" and variant == "left":
+                if not s.get("image"):
+                    die(f"slide {i}: layout 'image:left' needs an image")
+                img_w, gap = 7.43, 0.35
+                text_x = R_MARGIN_L + img_w + gap
+                text_w = R_WIDTH - img_w - gap
+                place_image(slide, s["image"], R_MARGIN_L, R_BODY_Y, img_w, R_BODY_H)
+                if lines:
+                    tb = slide.shapes.add_textbox(Inches(text_x), Inches(R_BODY_Y),
+                                                  Inches(text_w), Inches(R_BODY_H))
+                    fill_text_frame(tb.text_frame, lines, size=18, color=_txt,
+                                    bullet_char=bullet, sub_color=_txt2)
+
+            elif kind == "image" and variant == "top":
+                if not s.get("image"):
+                    die(f"slide {i}: layout 'image:top' needs an image")
+                IMG_H = R_BODY_H * 0.52
+                place_image(slide, s["image"], R_MARGIN_L, R_BODY_Y, R_WIDTH, IMG_H)
+                if lines:
+                    text_y = R_BODY_Y + IMG_H + 0.12
+                    text_h = max(6.65 - text_y, 0.5)
+                    tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(text_y),
+                                                  Inches(R_WIDTH), Inches(text_h))
+                    fill_text_frame(tb.text_frame, lines, size=16, color=_txt,
+                                    bullet_char=bullet, sub_color=_txt2)
+
+            elif kind == "content" and variant == "editorial":
+                # 65/35 editorial hierarchy: lead idea left, supporting detail right.
+                lead = (s.get("subtitle") or (lines[0] if lines else "")).strip()
+                rest = lines if s.get("subtitle") else (lines[1:] if lines else [])
+                tb_lead = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y + 0.30),
+                                                    Inches(7.10), Inches(2.35))
+                tb_lead.name = "db:editorial-lead"
+                tb_lead.text_frame.word_wrap = True
+                style_run(tb_lead.text_frame.paragraphs[0].add_run(), lead,
+                          size=30, color=_txt, bold=True)
+                if rest:
+                    tb = slide.shapes.add_textbox(Inches(8.45), Inches(R_BODY_Y + 0.35),
+                                                  Inches(3.95), Inches(3.90))
+                    fill_text_frame(tb.text_frame, rest, size=16, color=_txt2,
+                                    bullet_char=bullet, sub_color=_txt2)
+
+            elif kind == "content" and variant == "spotlight":
+                focus = (s.get("subtitle") or (lines[0] if lines else "")).strip()
+                rest = lines if s.get("subtitle") else (lines[1:] if lines else [])
+                tb_focus = slide.shapes.add_textbox(Inches(2.05), Inches(R_BODY_Y + 0.45),
+                                                     Inches(9.20), Inches(1.65))
+                tb_focus.name = "db:spotlight"
+                tb_focus.text_frame.word_wrap = True
+                pp = tb_focus.text_frame.paragraphs[0]
+                pp.alignment = PP_ALIGN.CENTER
+                style_run(pp.add_run(), focus, size=34, color=_txt, bold=True)
+                if rest:
+                    tb = slide.shapes.add_textbox(Inches(7.10), Inches(4.35), Inches(4.80), Inches(1.35))
+                    fill_text_frame(tb.text_frame, rest, size=15, color=_txt2,
+                                    bullet_char=None, sub_color=_txt2)
+
+            elif kind == "content" and variant == "diagram":
+                items = s.get("cards") or []
+                if not items:
+                    die(f"slide {i}: layout 'content:diagram' needs cards: [{{title, body?}}, ...]")
+                # Reuse native editable card primitives but arrange them as a hub-and-spoke diagram.
+                core = items[0]
+                support = items[1:5]
+                cards.add_cards(slide, [core], (4.65, 3.05, 4.00, 1.35),
+                                style_run, variant="featured", latin=LATIN_FONT, cjk=CJK_FONT)
+                if support:
+                    cards.add_cards(slide, support, (R_MARGIN_L, 4.65, R_WIDTH, 1.55),
+                                    style_run, variant="3-col" if len(support) == 3 else "4-grid",
+                                    latin=LATIN_FONT, cjk=CJK_FONT)
+
+            elif kind == "content" and variant == "data-story":
+                if not s.get("chart"):
+                    die(f"slide {i}: layout 'content:data-story' needs a chart object")
+                insight_w, gap = 3.20, 0.35
+                chart_x = R_MARGIN_L + insight_w + gap
+                chart_w = R_WIDTH - insight_w - gap
+                if lines or s.get("subtitle"):
+                    insight_lines = ([s["subtitle"]] if s.get("subtitle") else []) + (lines or [])
+                    tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y + 0.15),
+                                                  Inches(insight_w), Inches(R_BODY_H - 0.30))
+                    fill_text_frame(tb.text_frame, insight_lines, size=17, color=_txt,
+                                    bullet_char=None, sub_color=_txt2)
+                add_chart_to_slide(slide, s["chart"], False, i,
+                                   box=(chart_x, R_BODY_Y, chart_w, R_BODY_H - 0.15))
+
+            elif kind == "cards" or s.get("cards"):
+                if not s.get("cards"):
+                    die(f"slide {i}: layout 'cards' needs a cards list")
+                cards.add_cards(slide, s["cards"],
+                                (R_MARGIN_L, R_BODY_Y, R_WIDTH, R_BODY_H),
+                                style_run, variant=variant,
+                                latin=LATIN_FONT, cjk=CJK_FONT)
+
+            elif kind == "timeline":
+                from pptx.enum.shapes import MSO_SHAPE as _MSO3
+                evs = s.get("events")
+                if not evs or not isinstance(evs, list) or len(evs) < 2:
+                    die(f"slide {i}: layout 'timeline' needs an events list "
+                        "with at least 2 items")
+                if len(evs) > 6:
+                    warn(f"slide {i}: {len(evs)} events — more than 6 will be cramped; "
+                         "consider a table or splitting into two slides")
+
+                n = len(evs)
+                slot_w  = R_WIDTH / n
+                LINE_Y  = 3.55
+                DOT_D   = 0.22
+                DOT_R   = DOT_D / 2
+                LABEL_H = 0.40
+                LABEL_Y = LINE_Y - DOT_R - 0.10 - LABEL_H
+                TITLE_Y = LINE_Y + DOT_R + 0.14
+                TITLE_H = 0.52
+                BODY_Y  = TITLE_Y + TITLE_H + 0.08
+                BODY_H  = 0.90
+
+                # Horizontal connector line
+                tl_line = slide.shapes.add_shape(
+                    _MSO3.RECTANGLE,
+                    Inches(R_MARGIN_L), Inches(LINE_Y - 0.01),
+                    Inches(R_WIDTH), Pt(2))
+                tl_line.name = "db:timeline-line"
+                tl_line.fill.solid()
+                tl_line.fill.fore_color.rgb = RULE
+                tl_line.line.fill.background()
+                tl_line.shadow.inherit = False
+
+                for j, ev in enumerate(evs):
+                    cx     = R_MARGIN_L + (j + 0.5) * slot_w
+                    accent = cards.ACCENTS[j % len(cards.ACCENTS)]
+                    tw     = slot_w * 0.90
+                    tx     = cx - tw / 2
+
+                    # Dot on the line
+                    dot = slide.shapes.add_shape(
+                        _MSO3.OVAL,
+                        Inches(cx - DOT_R), Inches(LINE_Y - DOT_R),
+                        Inches(DOT_D), Inches(DOT_D))
+                    dot.name = f"db:timeline-dot-{j}"
+                    dot.fill.solid()
+                    dot.fill.fore_color.rgb = accent
+                    dot.line.fill.background()
+                    dot.shadow.inherit = False
+
+                    # Date / label above the line
+                    lbl = (ev.get("label") or "").strip()
+                    if lbl:
+                        tb_l = slide.shapes.add_textbox(
+                            Inches(tx), Inches(LABEL_Y), Inches(tw), Inches(LABEL_H))
+                        tb_l.name = f"db:timeline-label-{j}"
+                        _pl = tb_l.text_frame.paragraphs[0]
+                        _pl.alignment = PP_ALIGN.CENTER
+                        style_run(_pl.add_run(), lbl, size=12, color=_txt2,
+                                  font=LATIN_FONT, cjk=CJK_FONT)
+
+                    # Event title below the line
+                    ev_title = (ev.get("title") or "").strip()
+                    if ev_title:
+                        tb_t = slide.shapes.add_textbox(
+                            Inches(tx), Inches(TITLE_Y), Inches(tw), Inches(TITLE_H))
+                        tb_t.name = f"db:timeline-title-{j}"
+                        tf_t = tb_t.text_frame
+                        tf_t.word_wrap = True
+                        _pt = tf_t.paragraphs[0]
+                        _pt.alignment = PP_ALIGN.CENTER
+                        style_run(_pt.add_run(), ev_title, size=14, color=_txt,
+                                  bold=True, font=LATIN_FONT, cjk=CJK_FONT)
+
+                    # Optional body text below title
+                    ev_body = (ev.get("body") or "").strip()
+                    if ev_body:
+                        tb_b = slide.shapes.add_textbox(
+                            Inches(tx), Inches(BODY_Y), Inches(tw), Inches(BODY_H))
+                        tb_b.name = f"db:timeline-body-{j}"
+                        tf_b = tb_b.text_frame
+                        tf_b.word_wrap = True
+                        _pb = tf_b.paragraphs[0]
+                        _pb.alignment = PP_ALIGN.CENTER
+                        style_run(_pb.add_run(), ev_body, size=12, color=_txt2,
+                                  font=LATIN_FONT, cjk=CJK_FONT)
+
+            else:  # content (default)
+                if kind not in ("content", "image"):
                     warn(f"slide {i}: unknown layout {kind!r} for the recommended "
                          "style — rendered as 'content'")
-                if lines:
-                    tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y),
-                                                  Inches(R_WIDTH), Inches(R_BODY_H))
-                    fill_text_frame(tb.text_frame, lines, size=18, color=TEXT,
-                                    bullet_char=bullet, sub_color=TEXT_2)
+                if s.get("cards"):
+                    cards.add_cards(slide, s["cards"],
+                                    (R_MARGIN_L, R_BODY_Y, R_WIDTH, R_BODY_H),
+                                    style_run, variant=variant,
+                                    latin=LATIN_FONT, cjk=CJK_FONT)
+                elif lines:
+                    if (s.get("bullets") and not s.get("chart")
+                            and not s.get("image")):
+                        add_visual_bullets(slide, lines,
+                                           R_MARGIN_L, R_BODY_Y, R_WIDTH, R_BODY_H,
+                                           style_run, color=_txt, sub_color=_txt2,
+                                           accent=_bar,
+                                           latin=LATIN_FONT, cjk=CJK_FONT)
+                    elif s.get("bullets") and (s.get("chart") or s.get("image")):
+                        # Narrow column beside chart/image — keep compact text
+                        chart_x = R_MARGIN_L + 4.0 + 0.35
+                        tb = slide.shapes.add_textbox(
+                            Inches(R_MARGIN_L), Inches(R_BODY_Y),
+                            Inches(4.0), Inches(R_BODY_H))
+                        fill_text_frame(tb.text_frame, lines, size=16, color=_txt,
+                                        bullet_char="•", sub_color=_txt2)
+                    else:
+                        tb = slide.shapes.add_textbox(Inches(R_MARGIN_L), Inches(R_BODY_Y),
+                                                      Inches(R_WIDTH), Inches(R_BODY_H))
+                        fill_text_frame(tb.text_frame, lines, size=18, color=_txt,
+                                        bullet_char=None, sub_color=_txt2)
                 if s.get("chart"):
                     add_chart_to_slide(slide, s["chart"], False, i,
                                        box=(R_MARGIN_L, R_BODY_Y, R_WIDTH,
                                             R_BODY_H - 0.15))
                 if s.get("image"):
                     place_image(slide, s["image"], 3.50, R_BODY_Y + 0.20,
-                               6.33, R_BODY_H - 0.40)
+                                6.33, R_BODY_H - 0.40)
 
-            r_slide_number(slide, i)
+            r_slide_number(slide, i, color=_txt2)
 
         add_notes(slide, s.get("notes"))
 
@@ -1084,59 +1760,105 @@ def finish(prs, spec, out):
 
 
 CONFIG_NAME = "config.json"
-BUNDLED_TEMPLATE = os.path.join("assets", "company-template.pptx")
+# CSI (US/global) — also the legacy `style: "company"` target.
+BUNDLED_CSI = os.path.join("assets", "company-template.pptx")
+BUNDLED_CSITW = os.path.join("assets", "csitw-template.pptx")
+# Back-compat alias used in older docs/errors.
+BUNDLED_TEMPLATE = BUNDLED_CSI
+
+# Template-backed styles. `company` is a legacy alias for `csi`.
+TEMPLATE_STYLES = frozenset({"csi", "csitw", "company", "custom"})
 
 
 def skill_dir():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def load_config():
-    """Machine-local override for the bundled template.
+def normalize_style(spec):
+    """Return the canonical style name; map legacy `company` → `csi`."""
+    raw = (spec.get("style") or "company").lower().strip()
+    if raw == "company":
+        return "csi"
+    return raw
 
-    Looks for DECK_BUILDER_TEMPLATE in the environment, then <skill>/config.json.
-    Neither is required — the skill ships the company template in `assets/`, so a fresh
-    clone builds with no setup. These exist for the cases the bundled copy can't cover:
-    a newer revision of the template, or a different one entirely.
+
+def load_config():
+    """Machine-local overrides for the bundled CSI / CSITW templates.
+
+    Env (highest → lowest within each brand):
+      DECK_BUILDER_CSI_TEMPLATE / DECK_BUILDER_CSITW_TEMPLATE
+      DECK_BUILDER_TEMPLATE          — legacy; treated as CSI override
+
+    Then `<skill>/config.json` keys: `csi_template`, `csitw_template`,
+    and legacy `company_template` (→ CSI).
+
+    Neither is required — the skill ships both templates in `assets/`.
     """
-    tpl = os.environ.get("DECK_BUILDER_TEMPLATE")
-    if tpl:
-        return {"company_template": tpl}
+    cfg = {}
     path = os.path.join(skill_dir(), CONFIG_NAME)
     if os.path.isfile(path):
         try:
             with open(path, encoding="utf-8") as fh:
-                return json.load(fh)
+                cfg = json.load(fh) or {}
         except (OSError, ValueError) as e:
             warn(f"ignoring unreadable {CONFIG_NAME}: {e}")
-    return {}
+
+    # Env overrides win over config.json.
+    if os.environ.get("DECK_BUILDER_CSI_TEMPLATE"):
+        cfg["csi_template"] = os.environ["DECK_BUILDER_CSI_TEMPLATE"]
+    if os.environ.get("DECK_BUILDER_CSITW_TEMPLATE"):
+        cfg["csitw_template"] = os.environ["DECK_BUILDER_CSITW_TEMPLATE"]
+    # Legacy single override → CSI only.
+    if os.environ.get("DECK_BUILDER_TEMPLATE"):
+        cfg.setdefault("csi_template", os.environ["DECK_BUILDER_TEMPLATE"])
+        cfg.setdefault("company_template", os.environ["DECK_BUILDER_TEMPLATE"])
+    return cfg
+
+
+def _configured_template(cfg, style):
+    """Pick the configured path for a template-backed style, if any."""
+    if style == "csi":
+        return cfg.get("csi_template") or cfg.get("company_template")
+    if style == "csitw":
+        return cfg.get("csitw_template")
+    return None
 
 
 def resolve_template(spec):
     """Fill in spec['template'] when the spec doesn't name one.
 
-    Order: spec's own `template` → DECK_BUILDER_TEMPLATE → config.json → the copy
-    bundled in `assets/`. An explicit template in the spec always wins, so `custom`
-    decks and one-off templates are unaffected. The bundled fallback is last, so anyone
-    who already configured a path keeps getting their own file.
+    Order: spec's own `template` → env/config for that brand → bundled asset.
+    `recommended` draws its own slides (no template). `custom` must set `template`.
+    Explicit `template` in the spec always wins.
     """
-    if spec.get("template") or (spec.get("style") or "company").lower() == "recommended":
+    if spec.get("template"):
         return
-    tpl = load_config().get("company_template")
+    style = normalize_style(spec)
+    if style == "recommended":
+        return
+    if style == "custom":
+        return  # build_from_template will die if template is still missing
+    if style not in ("csi", "csitw"):
+        return
+
+    cfg = load_config()
+    tpl = _configured_template(cfg, style)
     if tpl:
         tpl = os.path.expanduser(tpl)
         if not os.path.isfile(tpl):
-            die(f"configured company template not found: {tpl}\n"
-                "Fix the path in config.json / DECK_BUILDER_TEMPLATE, or remove the "
-                "setting to fall back to the bundled "
-                f"{BUNDLED_TEMPLATE}.")
+            die(f"configured {style} template not found: {tpl}\n"
+                "Fix the path in config.json / DECK_BUILDER_CSI_TEMPLATE / "
+                "DECK_BUILDER_CSITW_TEMPLATE, or remove the setting to fall back "
+                f"to the bundled asset.")
         spec["template"] = tpl
         return
-    bundled = os.path.join(skill_dir(), BUNDLED_TEMPLATE)
+
+    bundled_rel = BUNDLED_CSI if style == "csi" else BUNDLED_CSITW
+    bundled = os.path.join(skill_dir(), bundled_rel)
     if not os.path.isfile(bundled):
-        die(f"the bundled company template is missing ({bundled}). Re-clone the skill, "
-            "or set \"template\" in the spec / DECK_BUILDER_TEMPLATE to your own "
-            ".pptx. See references/company-template.md.")
+        die(f"the bundled {style} template is missing ({bundled}). Re-clone the skill, "
+            "or set \"template\" in the spec / the matching DECK_BUILDER_*_TEMPLATE "
+            f"env var. See references/{'company-template' if style == 'csi' else 'csitw-template'}.md.")
     spec["template"] = bundled
 
 
@@ -1168,13 +1890,14 @@ def main():
         die(f"{args.out} already exists — pass --force to overwrite")
 
     apply_fonts(spec)
-    style = (spec.get("style") or "company").lower()
+    style = normalize_style(spec)
     if style == "recommended":
         build_recommended(spec, args.out)
-    elif style in ("company", "custom"):
+    elif style in TEMPLATE_STYLES:
         build_from_template(spec, args.out)
     else:
-        die(f"unknown style {style!r} — use company, recommended or custom")
+        die(f"unknown style {style!r} — use csi, csitw, company (alias of csi), "
+            "recommended or custom")
 
 
 if __name__ == "__main__":

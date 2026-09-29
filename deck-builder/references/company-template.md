@@ -1,8 +1,11 @@
-# 公司樣板 — 已驗證規格
+# CSI 公司樣板（美國／全球）— 已驗證規格
+
+**實體：**CSI（美國／全球）。台灣請改用 `style: "csitw"` → `references/csitw-template.md`。
 
 **檔案：**內建於 `assets/company-template.pptx`（1.9 MB · 13 頁 · **13 個版面** ·
-1 個 master · 15 個內嵌媒體），不需設定即可使用。要改用別的版本就設 `config.json` 的
-`company_template` 或 `DECK_BUILDER_TEMPLATE` 環境變數。
+1 個 master · 15 個內嵌媒體）。`style: "csi"`（舊名 `"company"` 仍可用）。
+要改用別的版本就設 `config.json` 的 `csi_template`／`company_template`，或
+`DECK_BUILDER_CSI_TEMPLATE`／`DECK_BUILDER_TEMPLATE`。
 
 以下每一項都是從實際檔案讀出來的，不是推測。可以當成 ground truth，但**檔案一變動就重跑**
 `scripts/inspect_template.py`，不要相信這一頁。

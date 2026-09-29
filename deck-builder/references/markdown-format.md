@@ -65,16 +65,46 @@ title: Genie 2026 設計審核
 | 寫法 | 對應 spec 欄位 |
 |---|---|
 | `**標題** …` / `**title** …` | `title` |
-| `**副標** …` | `subtitle` |
+| `**副標** …` / `**subtitle** …` | `subtitle` |
+| `**eyebrow** …` / `**眉標** …` | `eyebrow`（`statement` 的小型分類標） |
 | `- 項目`（縮排 2 格 = 第二層） | `bullets` |
 | 沒有項目符號的一般段落 | `paragraphs` |
 | `**左欄**` / `**右欄**` 之後的項目 | `columns`（推薦風格的 `two-column`） |
 | Markdown 表格 | `table`（欄寬均分；要調就改用 JSON 的 `col_widths`） |
 | `**圖表**` ＋ 隨後的 ```` ```json ```` 區塊 | `chart` |
+| `**卡片**` ＋ 隨後的 ```` ```json ```` 區塊 | `cards`（見 `cards.md`；icon 可用 `csi:court` 或 Interface 名稱） |
 | `![](/abs/path.png)` 或 `**[image: /abs/path.png]**` | `image` |
 | `**圖說** …` | `caption` |
 | `**備註** …` 或 `> …` | `notes` |
 | `**保留結尾** 否` | `keep_closing: false` |
+| `**暗色** 是` 或 `**dark** true` | `dark: true`（該頁深底） |
+
+**版面 Variant 語法：** 冒號接在版面名稱後面，直接寫在 `##` 標題上：
+
+```markdown
+## image:left
+**標題** 介面截圖
+![](/path/to/screenshot.png)
+- 橫向捲動問題
+
+## cards:bento
+**標題** 核心能力與周邊
+
+**卡片**
+
+```json
+[
+  {"title": "主產品", "body": "主導航與搜尋", "icon": "csi:court"},
+  {"title": "模組 A", "body": "支援流程"},
+  {"title": "模組 B", "body": "報表"}
+]
+```
+
+## statement
+**eyebrow** 關鍵洞察
+**標題** 問題不在流程，在交接
+**副標** 三個團隊之間沒有單一負責人
+```
 
 欄位名稱中英皆可（`**notes**` 等於 `**備註**`）。`**bold**`、`_italic_`、`` `code` ``
 是大綱給人讀的排版，寫進簡報前會被去掉——投影片上出現一顆星號幾乎都不是原意。

@@ -2,11 +2,12 @@
 
 產出**可編輯的 .pptx** 簡報，真正繼承樣板的 master、版面、字體與品牌色——不是做一個外觀相似的檔案。適用 [Claude Code](https://claude.com/claude-code) 與 [Cursor](https://cursor.com/docs/skills)。
 
-三種風格：
+三種風格 → **四種 `style` 值**：
 
-- **公司樣板** — 已內建在 `assets/company-template.pptx`，clone 完直接可用，真正的 master 繼承
-- **系統推薦** — 保留企業藍，但版面更簡潔密實的自繪風格
-- **使用者提供的樣板** — 先檢視你的 `.pptx`／`.potx`，報告版面與色票後再開始做
+- **CSI 樣板**（`style: "csi"`，舊名 `"company"`）— `assets/company-template.pptx`
+- **CSITW 樣板**（`style: "csitw"`）— `assets/csitw-template.pptx`（版面名稱與 CSI 不同）
+- **系統推薦**（`style: "recommended"`）— 自繪、更簡潔密實
+- **使用者提供**（`style: "custom"` + `template` 路徑）
 
 兩種用法：交給 Agent 對話（它會問對象與風格、先給你大綱確認），或**自己寫一份 `.md`
 直接 build**（見[直接用 Markdown 做](#直接用-markdown-做)）。
@@ -15,23 +16,26 @@
 
 此 skill 位於 `claude-skills` repo——完整 clone 步驟見該 repo 的 [README](../README.md)。
 
-**公司樣板不需要設定。** 它跟著 skill 一起附在 `assets/company-template.pptx`，所以 clone
-下來就能用 `style: "company"` 做簡報。
+**公司樣板不需要設定。** CSI（`assets/company-template.pptx`）與 CSITW
+（`assets/csitw-template.pptx`）都跟著 skill 附上，clone 下來就能用 `style: "csi"` 或
+`style: "csitw"`。
 
 ### 換成別的樣板（選用）
 
-公司發了新版樣板，或你要用另一份時，才需要這一步。優先序高到低：
+公司發了新版樣板，或你要用另一份時，才需要這一步：
 
 ```bash
-export DECK_BUILDER_TEMPLATE="$HOME/Documents/.../Your Template.pptx"
+export DECK_BUILDER_CSI_TEMPLATE="$HOME/Documents/.../CSI Template.pptx"
+export DECK_BUILDER_CSITW_TEMPLATE="$HOME/Documents/.../CSITW Template.pptx"
+# 舊變數 DECK_BUILDER_TEMPLATE 仍可用，只覆寫 CSI
 ```
 
-或建立 `config.json`（已被 gitignore，因為絕對路徑因機器而異）：
+或建立 `config.json`（已被 gitignore）：
 
 ```bash
 cp ~/.claude/skills/deck-builder/config.example.json \
    ~/.claude/skills/deck-builder/config.json
-# 然後把 company_template 改成你的樣板實際路徑
+# 填 csi_template / csitw_template
 ```
 
 設了但檔案不存在會**直接報錯**，不會無聲改用內建那份——否則你會拿到一份看起來成功、其實

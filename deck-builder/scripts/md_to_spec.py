@@ -27,7 +27,7 @@ import sys
 
 # Deck-level keys, from the frontmatter. Anything else is passed through untouched, so
 # a future spec key works here before this file learns about it.
-BOOL_KEYS = {"collapse_layouts", "keep_closing"}
+BOOL_KEYS = {"collapse_layouts", "keep_closing", "dark"}
 
 # Per-slide field names → spec key. Both English and 繁中, because the outline the user
 # reads is Chinese but the spec is not.
@@ -35,12 +35,17 @@ FIELDS = {
     "layout": "layout", "版面": "layout",
     "title": "title", "標題": "title", "大標": "title",
     "subtitle": "subtitle", "副標": "subtitle", "副標題": "subtitle",
+    "eyebrow": "eyebrow", "眉標": "eyebrow", "小標": "eyebrow",
     "notes": "notes", "備註": "notes", "講者備註": "notes",
     "image": "image", "圖片": "image",
     "caption": "caption", "圖說": "caption",
     "table": "table", "表格": "table",
     "chart": "chart", "圖表": "chart",
+    "cards": "cards", "卡片": "cards",
+    "cards_variant": "cards_variant", "卡片風格": "cards_variant", "卡片版型": "cards_variant",
     "keep_closing": "keep_closing", "保留結尾": "keep_closing",
+    "dark": "dark", "暗色": "dark", "深底": "dark",
+    "events": "events", "事件": "events", "時間軸": "events",
 }
 
 # These switch where subsequent bullets land, for the recommended style's two-column.
@@ -254,7 +259,7 @@ def parse(text):
                 continue
             if key in FIELDS:
                 target = FIELDS[key]
-                if target in ("table", "chart"):
+                if target in ("table", "chart", "cards", "events"):
                     # The structure follows on the next lines; remember where it goes.
                     fence_field = target
                     continue

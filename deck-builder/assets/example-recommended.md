@@ -9,12 +9,13 @@ title: 推薦樣式測試
 
 **對象** 內部 · **風格** 系統推薦 · **語言** 繁中 · **10 張 · 約 12–15 分鐘**
 
-推薦風格不用公司樣板，版面名稱是這一組：`title`、`section`、`content`、`two-column`、
+推薦風格不用公司樣板，版面名稱是這一組：`cover`、`section`、`content`、`two-column`、
 `image-right`、`image-full`、`table`、`chart`、`chart-right`、`quote`、`closing`。
+（`title` 仍可當封面的舊別名，但請改寫 `cover`。）
 
 ---
 
-## title
+## cover
 
 **標題** Genie 2026 設計審核
 **副標** 無障礙與可用性稽核
