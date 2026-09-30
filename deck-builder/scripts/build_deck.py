@@ -48,8 +48,8 @@ def rgb(h):
 
 PRIMARY      = rgb("0d63ba")
 PRIMARY_DARK = rgb("0b539d")
-TEXT         = rgb("13182c")
-TEXT_2       = rgb("5a5f6e")
+TEXT         = rgb("262626")
+TEXT_2       = rgb("404040")
 RULE         = rgb("d8d8d8")
 PANEL        = rgb("f4f6f9")
 WHITE        = rgb("ffffff")
@@ -186,7 +186,7 @@ def fill_text_frame(tf, lines, size, color, bullet_char=None,
     """
     tf.word_wrap = True
     tf.clear()
-    sub_size = sub_size or max(size - 2, 10)
+    sub_size = sub_size or max(size - 2, 12)
     sub_color = sub_color or color
 
     for i, raw in enumerate(lines):
@@ -497,14 +497,14 @@ def place_image(slide, path, x, y, max_w, max_h):
 
 # ================================================================ company / custom
 
-def _center_cover_text(ph):
-    """Cover title/subtitle: centered in the box, horizontally and vertically."""
+def _left_cover_text(ph):
+    """Cover title/subtitle: left-aligned to match the logo position."""
     tf = ph.text_frame
     body = tf._txBody.find(qn("a:bodyPr"))
     if body is not None:
         body.set("anchor", "ctr")
     for para in tf.paragraphs:
-        para.alignment = PP_ALIGN.CENTER
+        para.alignment = PP_ALIGN.LEFT
 
 
 def _add_centered_title(slide, title, color, size=32):
@@ -1100,7 +1100,7 @@ def build_from_template(spec, out):
                 run = set_ph_text(ph, title)   # inherit the master's title styling
                 if on_cover:
                     run.font.size = Pt(COVER_TITLE_PT)
-                    _center_cover_text(ph)
+                    _left_cover_text(ph)
             else:
                 # Headings_* are section dividers with no TITLE placeholder.
                 # The title sits in the middle of the canvas, text centered.
@@ -1121,7 +1121,7 @@ def build_from_template(spec, out):
             if ph is not None:
                 set_ph_text(ph, sub)
                 if on_cover:
-                    _center_cover_text(ph)
+                    _left_cover_text(ph)
             else:
                 warn(f"slide {i}: layout '{layout.name}' has no subtitle placeholder "
                      "— subtitle rendered as a textbox")
@@ -1248,7 +1248,7 @@ def r_slide_number(slide, n, color=None):
     tb.name = "db:label"
     p = tb.text_frame.paragraphs[0]
     p.alignment = PP_ALIGN.RIGHT
-    style_run(p.add_run(), str(n), size=11, color=color or TEXT_2)
+    style_run(p.add_run(), str(n), size=12, color=color or TEXT_2)
 
 
 def build_recommended(spec, out):
@@ -1293,11 +1293,11 @@ def build_recommended(spec, out):
                                           Inches(R_WIDTH), Inches(1.20))
             tb.name = "db:headline"
             p = tb.text_frame.paragraphs[0]
-            p.alignment = PP_ALIGN.CENTER
+            p.alignment = PP_ALIGN.LEFT
             style_run(p.add_run(), s.get("title", ""), size=40, color=_txt, bold=True)
             if s.get("subtitle"):
                 from pptx.enum.shapes import MSO_SHAPE
-                bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(6.07),
+                bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(R_MARGIN_L),
                                              Inches(3.95), Inches(1.2), Pt(3))
                 bar.fill.solid()
                 bar.fill.fore_color.rgb = _bar
@@ -1307,7 +1307,7 @@ def build_recommended(spec, out):
                                                Inches(R_WIDTH), Inches(0.6))
                 tb2.name = "db:label"
                 p2 = tb2.text_frame.paragraphs[0]
-                p2.alignment = PP_ALIGN.CENTER
+                p2.alignment = PP_ALIGN.LEFT
                 style_run(p2.add_run(), s["subtitle"], size=18, color=_txt2)
 
         elif kind == "section":
