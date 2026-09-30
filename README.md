@@ -2,7 +2,7 @@
 
 個人用的 Agent skills，跨機器共用。同時支援 [Claude Code](https://claude.com/claude-code) 與 [Cursor](https://cursor.com/docs/skills)。
 
-每個頂層目錄是一個 skill（內含 `SKILL.md`）。
+每個頂層目錄是一個 skill。多數內含 `SKILL.md`，工具會自動載入；`meeting-minutes` 在安裝後以 `/minutes` 指令使用。
 
 ## Skills
 
@@ -10,6 +10,7 @@
 |---|---|
 | [`uiux-audit`](uiux-audit/) | 稽核 UI/UX 品質——設計檔或已實作的程式碼——並產出依優先順序排列的發現報告。內含 WCAG 對比計算器，以及 Playwright 截圖 + axe-core 掃描器。 |
 | [`deck-builder`](deck-builder/) | 產出可編輯的 `.pptx` 簡報，真正繼承樣板的 master、版面與品牌色。**公司樣板已內建，clone 完不必設定就能用**，也可以直接餵一份 `.md` 大綱給它做簡報。先問對象與風格，逐頁大綱經確認後才產生，交付前跑對比與溢出驗證。 |
+| [`meeting-minutes`](meeting-minutes/) | 把會議或教學的錄音整理成可轉貼的會議記錄、逐字稿，以及一張聽不清楚的句子表。錄音留在本機轉錄；有附簡報、PDF 或 Excel 時，會拿來對照專有名詞。Mac 與 Windows 都能用，也支援 VS Code 與 Codex。第一次安裝會下載約 1.6GB 的語音模型。 |
 
 ## 在 Cursor 使用
 
@@ -45,20 +46,35 @@ ln -s ~/claude-skills/uiux-audit /path/to/your-project/.cursor/skills/uiux-audit
 bash ~/claude-skills/uiux-audit/install.sh
 ```
 
+`meeting-minutes` 要另外跑安裝腳本。它會下載語音模型，並把 `/minutes` 寫進 `~/.cursor/commands/minutes.md`：
+
+```bash
+bash ~/claude-skills/meeting-minutes/install.sh --yes
+```
+
+步驟與 Windows 安裝見 [`meeting-minutes/1-install.md`](meeting-minutes/1-install.md)。
+
 ### 怎麼呼叫
 
 在 **Agent** 對話裡：
 
-1. **手動**：輸入 `/` 後選 skill 名稱（或直接打 `/uiux-audit`、`/deck-builder`）
-2. **自動**：直接用自然語言，Agent 會依 skill 的 `description` 決定是否套用，例如：
+1. **手動**：輸入 `/` 後選 skill 名稱（或直接打 `/uiux-audit`、`/deck-builder`、`/minutes`）。會議記錄要在同一則訊息附上錄音與參加者，例如：
+
+   ```
+   /minutes
+   音檔：~/Desktop/會議記錄/audio/2026-09-11-設計評審.m4a
+   參加者 3 位：Joyie（主持人）、Zoe、Allen
+   ```
+
+2. **自動**：有 `SKILL.md` 的 skill，Agent 會依 `description` 決定是否套用，例如：
    - `審核這個設計`（附上截圖）
    - `audit the login page of this project`
    - `幫我把這份報告做成簡報`
    - `做一份給客戶的提案 PPT`
 
-也可在 Cursor Settings → Rules → Agent Decides 確認 skill 已出現。
+也可在 Cursor Settings → Rules → Agent Decides 確認 skill 已出現。`/minutes` 要等安裝腳本寫入 commands 後才會出現在 `/` 清單。
 
-詳細用法見 [`uiux-audit/README.md`](uiux-audit/) 與 [`deck-builder/README.md`](deck-builder/)。
+詳細用法見 [`uiux-audit/README.md`](uiux-audit/)、[`deck-builder/README.md`](deck-builder/) 與 [`meeting-minutes/README.md`](meeting-minutes/)。
 
 ## 在 Claude Code 使用
 
@@ -88,6 +104,9 @@ bash ~/.claude/skills/uiux-audit/install.sh
 cp ~/.claude/skills/deck-builder/config.example.json \
    ~/.claude/skills/deck-builder/config.json
 # 再把裡面的 company_template 改成你的樣板實際路徑
+
+# meeting-minutes：第一次要安裝（下載語音模型，並寫入 /minutes）
+bash ~/.claude/skills/meeting-minutes/install.sh --yes
 ```
 
 在 Claude Code 裡用 `/skills` 確認已載入。
@@ -116,4 +135,8 @@ cp ~/.claude/skills/deck-builder/config.example.json \
 
 ## 同步
 
-在每台機器上 `git pull`。依賴不納入版本控管，所以 pull 到新增了依賴的 skill 後，請重新執行其安裝腳本。
+在每台機器上 `git pull`。依賴不納入版本控管，所以 pull 到新增了依賴的 skill 後，請重新執行其安裝腳本。`meeting-minutes` 的語音模型已在本機時，只需重裝入口：
+
+```bash
+bash ~/.claude/skills/meeting-minutes/install.sh --update-entrypoints
+```
