@@ -1,0 +1,5 @@
+opencc-python-reimplemented>=0.1.7
+pyyaml>=6.0
+# 說話者分群（scripts/diarize.py）。缺了不會壞，只是逐字稿不標說話者。
+sherpa-onnx>=1.13.8
+numpy>=2.0

@@ -1,0 +1,9 @@
+# 同一份工具包 Mac 和 Windows 共用。統一用 LF 存，只有 Windows 的腳本用 CRLF：
+# cmd.exe 讀 LF 結尾的 .cmd 偶爾會吃錯行。
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.sh  text eol=lf
+data/english-words.txt text eol=lf
+*.bin binary
+*.onnx binary

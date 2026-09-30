@@ -1,0 +1,48 @@
+# 注意：gitignore 的 # 只有在**行首**才是註解。
+# 寫成 `models/    # 說明` 會讓整串變成 pattern，等於沒有忽略。
+
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.partial
+*.wav
+
+# 本機路徑設定，每個人不一樣（範本是 config.yaml.example）
+config/config.yaml
+
+# whisper 模型，1.6GB，由 install.sh 下載
+models/
+
+# 信心度快取、聲紋快取等中間產物。可重建，而且內容是逐字稿原文與
+# 從錄音算出的聲音特徵（都是機密，聲紋更不該進版控）。
+var/
+
+# install.sh 產生的 transcribe 包裝，內含絕對路徑
+bin/
+
+# ── 刻意「不」忽略的兩個檔案 ──
+# config/glossary.txt 與 config/eval-cases.tsv 是**進版控、全員共用**的。
+# 它們一行一條規則，git 對這種純文字的自動合併很可靠：不同人各加幾行，
+# git pull --rebase 就合好了。這就是共用術語表的 merge 機制，不用另外寫程式。
+#
+# 代價是它們會包含真實的人名、專案名、客戶名（那本來就是它的用途）。
+# 這個 repo 必須維持 private。
+
+# ── 保險：會議內容不該出現在這個資料夾裡 ──
+# 音檔／逐字稿／會議記錄的正確位置在 repo 外面（config.yaml 的 data_root，
+# 預設在桌面）。萬一有人手動複製進來，下面這幾行擋一次。
+*.m4a
+*.mp3
+*.mp4
+*.mov
+*.review.md
+*.ai-review.md
+*.frames.md
+*.frames/
+transcripts/
+minutes/
+audio/
+
+# Windows：install.ps1 下載的 whisper-cli.exe（官方編好的版本，可重建）
+tools/
